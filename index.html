@@ -403,7 +403,7 @@
     border: 1px solid rgba(166,223,5,0.22);
   }
   .kpi .label { font-family: var(--font-heading); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--txt-2); font-weight: 700; padding-right: 44px; }
-  .kpi .value { font-family: var(--font-heading); font-size: 28px; font-weight: 800; color: var(--txt); margin-top: 8px; line-height: 1.1; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+  .kpi .value { font-family: var(--font-heading); font-size: 28px; font-weight: 800; color: var(--txt); margin-top: 26px; line-height: 1.1; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
   .kpi .sub { font-size: 12px; color: var(--txt-2); margin-top: 6px; }
   .kpi.accent {
     border-bottom: 3px solid var(--astra-lime);
@@ -713,7 +713,7 @@
   .rep .rep-head .rt{flex:1}
   .rep .rep-head h1{font-family:"Outfit",system-ui,sans-serif;font-size:22px;color:var(--astra-navy);margin:0}
   .rep .rep-head .rep-sub{font-size:12px;color:#5A6B7B;margin-top:3px}
-  .rep .rep-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .rep .rep-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
   .rep .rep-kpi{border:1px solid #CBD5E1;border-radius:8px;padding:9px 12px}
   .rep .rep-kpi .rk-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#5A6B7B;font-weight:700}
   .rep .rep-kpi .rk-v{font-family:"Outfit",system-ui,sans-serif;font-size:18px;font-weight:800;color:var(--astra-navy);margin-top:2px}
@@ -7876,6 +7876,7 @@ const KPI_ICONS={
   money:_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5a2.5 2 0 0 1 2.5-1.5c1.4 0 2.5.7 2.5 1.6 0 .9-.8 1.4-2.5 1.9-1.7.5-2.5 1-2.5 1.9 0 .9 1.1 1.6 2.5 1.6a2.5 2 0 0 0 2.5-1.5"/>'),
   repeat:_SVG('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
   building:_SVG('<path d="M3 21h18"/><path d="M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h0M15 8h0M9 12h0M15 12h0M9 16h0M15 16h0"/>'),
+  pie:_SVG('<path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>'),
   trending:_SVG('<polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>'),
   star:_SVG('<polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9"/>')
 };
@@ -7909,10 +7910,9 @@ function renderDashboard(rows,sfx){
   k.innerHTML=
     kpi("Projetos",fmtInt.format(projVal),subProj,true,KPI_ICONS.briefcase)+
     kpi("CAPEX Total","R$ "+fmt(capex)+" mi","Total do portfólio filtrado",false,KPI_ICONS.money)+
-    kpi("Equity","R$ "+fmt(equity)+" mi","Soma do Equity dos projetos filtrados",false,KPI_ICONS.money)+
+    kpi("Equity","R$ "+fmt(equity)+" mi","Soma do Equity dos projetos filtrados",false,KPI_ICONS.pie)+
     kpi("Contraprestação","R$ "+fmt(contrAno)+" mi/ano","R$ "+fmt(contrAno/12)+" mi/mês",false,KPI_ICONS.repeat)+
     kpi("Infraestrutura",fmtInt.format(unidades)+" Unidades",fmtInt.format(vagas)+" Vagas previstas",false,KPI_ICONS.building)+
-    kpi("Contratos",fmtInt.format(contratos),"Licitação encerrada / contrato iniciado",false,KPI_ICONS.trending)+
     kpi("★ Favoritos",fmtInt.format(rows.filter(p=>p.favorito).length),"Acompanhados pela ASTRA",false,KPI_ICONS.star);
   fitKpiValues(k);
 
@@ -8226,6 +8226,7 @@ function blankProject(){ const p={id:uid()}; ALL_KEYS.forEach(k=>p[k]=(FIELD_BY_
 function openModal(id){
   editingId=id||null;
   const p = id? Object.assign({},byId2(id)) : blankProject();
+  if((p.equity===""||p.equity==null) && equityDefault(p.capex)!=="") p.equity=equityDefault(p.capex);   // mostra o padrão (30% do CAPEX)
   document.getElementById("modal-title").textContent = id? (READ_ONLY?"Ver Projeto":"Editar Projeto") : "Novo Projeto";
   document.getElementById("btn-delete").style.display = (id && !READ_ONLY)? "inline-flex":"none";
   document.getElementById("btn-save").style.display = READ_ONLY? "none":"";
@@ -8241,6 +8242,12 @@ function openModal(id){
     body.querySelectorAll(".modal-tab").forEach(b=>b.classList.toggle("active",b===btn));
     body.querySelectorAll(".group.tabbed").forEach(pn=>pn.classList.toggle("active",pn.dataset.panel===idx));
   }));
+  // Equity acompanha o CAPEX digitado enquanto estiver no padrão
+  const cx=body.querySelector('[data-fk="capex"]'), eq=body.querySelector('[data-fk="equity"]');
+  if(cx && eq){ let last=cx.value;
+    cx.addEventListener("input",()=>{ const od=equityDefault(last); const cur=eq.value.trim();
+      if(cur==="" || (od!=="" && num(cur)===od)){ const nd=equityDefault(cx.value); eq.value=nd===""?"":String(nd); }
+      last=cx.value; }); }
   document.getElementById("modal-bg").classList.add("open");
   const first=body.querySelector("[data-fk]"); if(first) setTimeout(()=>{ try{ first.focus(); }catch(e){} },50);
 }
@@ -8361,7 +8368,7 @@ function resumoFiltros(){
 }
 function reportHTML(rows,titulo,opts){
   opts=opts||{};
-  const capex=sum(rows,"capex"), contrAno=rows.reduce((s,p)=>s+contrAnoOf(p),0);
+  const capex=sum(rows,"capex"), equity=sumEquity(rows), contrAno=rows.reduce((s,p)=>s+contrAnoOf(p),0);
   const unidades=sum(rows,"numUnidades"), vagas=sum(rows,"numVagas");
   const ativos=rows.filter(p=>p.fase&&!FASES_TERM.includes(p.fase)).length;
   const favs=rows.filter(p=>p.favorito).length;
@@ -8372,41 +8379,41 @@ function reportHTML(rows,titulo,opts){
   // Funil por fase (ordem oficial + fases fora do padrão + sem fase)
   const fases=FASES.filter(f=>rows.some(p=>p.fase===f))
     .concat([...new Set(rows.map(p=>p.fase).filter(v=>v&&!FASES.includes(v)))]);
-  const linhaFase=(rot,g)=>`<tr><td>${esc(rot)}</td><td class="num">${g.length}</td><td class="num">${fmt(sum(g,"capex"))}</td><td class="num">${fmt(sum(g,"valorContrato"))}</td></tr>`;
+  const linhaFase=(rot,g)=>`<tr><td>${esc(rot)}</td><td class="num">${g.length}</td><td class="num">${fmt(sum(g,"capex"))}</td><td class="num">${fmt(sumEquity(g))}</td><td class="num">${fmt(sum(g,"valorContrato"))}</td></tr>`;
   const semFase=rows.filter(p=>!p.fase);
-  const tblFase=tbl([["Fase"],["Projetos",1],["CAPEX (R$ mi)",1],["Valor Contrato (R$ mi)",1]],
+  const tblFase=tbl([["Fase"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Valor Contrato (R$ mi)",1]],
     fases.map(f=>linhaFase(f,rows.filter(p=>p.fase===f))).join("")+(semFase.length?linhaFase("(sem fase)",semFase):""));
 
   // Distribuição por UF (ordenada por CAPEX)
   const ufs=[...new Set(rows.map(p=>p.uf).filter(Boolean))]
-    .map(u=>{const g=rows.filter(p=>p.uf===u); return [u,g.length,sum(g,"capex"),sum(g,"numUnidades")];})
+    .map(u=>{const g=rows.filter(p=>p.uf===u); return [u,g.length,sum(g,"capex"),sum(g,"numUnidades"),sumEquity(g)];})
     .sort((a,b)=>b[2]-a[2]||b[1]-a[1]);
   const semUf=rows.filter(p=>!p.uf).length;
-  const tblUf=tbl([["UF"],["Projetos",1],["CAPEX (R$ mi)",1],["Unidades",1]],
-    ufs.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
-    +(semUf?`<tr><td>(sem UF)</td><td class="num">${semUf}</td><td class="num"></td><td class="num"></td></tr>`:""));
+  const tblUf=tbl([["UF"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Unidades",1]],
+    ufs.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmt(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
+    +(semUf?`<tr><td>(sem UF)</td><td class="num">${semUf}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`:""));
 
   // Distribuição por Tipo de Escopo (Brownfield / Greenfield / Brown & Green + valores fora da lista)
   const escOrder=TIPO_ESCOPO.concat([...new Set(rows.map(p=>p.tipoEscopo).filter(v=>v&&!TIPO_ESCOPO.includes(v)))]);
-  const escLinhas=escOrder.map(e=>{const g=rows.filter(p=>p.tipoEscopo===e); return [e,g.length,sum(g,"capex"),sum(g,"numUnidades")];}).filter(x=>x[1]>0);
+  const escLinhas=escOrder.map(e=>{const g=rows.filter(p=>p.tipoEscopo===e); return [e,g.length,sum(g,"capex"),sum(g,"numUnidades"),sumEquity(g)];}).filter(x=>x[1]>0);
   const semEsc=rows.filter(p=>!p.tipoEscopo).length;
-  const tblEsc=tbl([["Tipo de Escopo"],["Projetos",1],["CAPEX (R$ mi)",1],["Unidades",1]],
-    escLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
-    +(semEsc?`<tr><td>(não informado)</td><td class="num">${semEsc}</td><td class="num"></td><td class="num"></td></tr>`:""));
+  const tblEsc=tbl([["Tipo de Escopo"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Unidades",1]],
+    escLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmt(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
+    +(semEsc?`<tr><td>(não informado)</td><td class="num">${semEsc}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`:""));
 
   // Distribuição por Estruturador (ordenada por nº de projetos)
   const estrMap={};
   rows.forEach(p=>{ const e=String(p.estruturador||"").trim(); if(e){ (estrMap[e]=estrMap[e]||[]).push(p); } });
-  const estrLinhas=Object.entries(estrMap).map(([e,g])=>[e,g.length,sum(g,"capex"),sum(g,"numUnidades")]).sort((a,b)=>b[1]-a[1]||b[2]-a[2]);
+  const estrLinhas=Object.entries(estrMap).map(([e,g])=>[e,g.length,sum(g,"capex"),sum(g,"numUnidades"),sumEquity(g)]).sort((a,b)=>b[1]-a[1]||b[2]-a[2]);
   const semEstr=rows.filter(p=>!String(p.estruturador||"").trim()).length;
-  const tblEstr=tbl([["Estruturador"],["Projetos",1],["CAPEX (R$ mi)",1],["Unidades",1]],
-    estrLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
-    +(semEstr?`<tr><td>(não informado)</td><td class="num">${semEstr}</td><td class="num"></td><td class="num"></td></tr>`:""));
+  const tblEstr=tbl([["Estruturador"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Unidades",1]],
+    estrLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmt(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
+    +(semEstr?`<tr><td>(não informado)</td><td class="num">${semEstr}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`:""));
 
   // Top 10 por CAPEX
   const top=[...rows].filter(p=>num(p.capex)>0).sort((a,b)=>num(b.capex)-num(a.capex)).slice(0,10);
-  const tblTop=top.length? tbl([["ID"],["Projeto"],["UF"],["Fase"],["Estruturador"],["Edital previsto"],["CAPEX (R$ mi)",1]],
-    top.map(p=>`<tr><td>${esc(p.idProjeto)}</td><td>${esc(p.nome)}</td><td>${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.estruturador)}</td><td>${esc(editalPrevisto(p))}</td><td class="num">${fmt(num(p.capex))}</td></tr>`).join(""))
+  const tblTop=top.length? tbl([["ID"],["Projeto"],["UF"],["Fase"],["Estruturador"],["Edital previsto"],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1]],
+    top.map(p=>`<tr><td>${esc(p.idProjeto)}</td><td>${esc(p.nome)}</td><td>${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.estruturador)}</td><td>${esc(editalPrevisto(p))}</td><td class="num">${fmt(num(p.capex))}</td><td class="num">${fmt(equityOf(p))}</td></tr>`).join(""))
     : `<p style="font-size:11px;color:#5A6B7B">Nenhum projeto com CAPEX informado neste recorte.</p>`;
 
   // Inventário completo do recorte (opcional). Tabela larga -> impressa em paisagem
@@ -8414,10 +8421,10 @@ function reportHTML(rows,titulo,opts){
   let inv="", landscape="";
   if(opts.inventario){
     const ordenado=[...rows].sort((a,b)=>String(a.idProjeto).localeCompare(String(b.idProjeto),"pt-BR",{numeric:true}));
-    const cols=[["ID","8%"],["Projeto","24%"],["UF","6%"],["Fase","21%"],["Escopo","10%"],["Estruturador","15%"],["Edital previsto","9%"],["CAPEX (R$ mi)","7%",1]];
+    const cols=[["ID","7%"],["Projeto","21%"],["UF","5%"],["Fase","19%"],["Escopo","10%"],["Estruturador","14%"],["Edital previsto","9%"],["CAPEX (R$ mi)","7.5%",1],["Equity (R$ mi)","7.5%",1]];
     const colg="<colgroup>"+cols.map(c=>`<col style="width:${c[1]}">`).join("")+"</colgroup>";
     const thead="<thead><tr>"+cols.map(c=>`<th${c[2]?' class="num"':""}>${c[0]}</th>`).join("")+"</tr></thead>";
-    const tbody="<tbody>"+ordenado.map(p=>`<tr><td class="nowrap">${esc(p.idProjeto)}</td><td>${esc(p.nome)}${p.favorito?" ★":""}</td><td class="nowrap">${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.tipoEscopo)}</td><td>${esc(p.estruturador)}</td><td class="nowrap">${esc(editalPrevisto(p))}</td><td class="num">${isFinite(num(p.capex))?fmt(num(p.capex)):""}</td></tr>`).join("")+"</tbody>";
+    const tbody="<tbody>"+ordenado.map(p=>`<tr><td class="nowrap">${esc(p.idProjeto)}</td><td>${esc(p.nome)}${p.favorito?" ★":""}</td><td class="nowrap">${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.tipoEscopo)}</td><td>${esc(p.estruturador)}</td><td class="nowrap">${esc(editalPrevisto(p))}</td><td class="num">${isFinite(num(p.capex))?fmt(num(p.capex)):""}</td><td class="num">${isFinite(equityOf(p))?fmt(equityOf(p)):""}</td></tr>`).join("")+"</tbody>";
     inv=`<div class="rep-block rep-inv"><h3 class="rep-sec">Inventário do recorte (${rows.length} projetos)</h3><table>${colg}${thead}${tbody}</table></div>`;
     landscape=`<style>@page{size:A4 landscape;margin:10mm}</style>`;
   }
@@ -8429,6 +8436,7 @@ function reportHTML(rows,titulo,opts){
     <div class="rep-kpis">
       ${kpi("Projetos",fmtInt.format(rows.length),ativos+" no funil ativo")}
       ${kpi("CAPEX Total","R$ "+fmt(capex)+" mi","Investimento previsto")}
+      ${kpi("Equity","R$ "+fmt(equity)+" mi","Soma do Equity dos projetos")}
       ${kpi("Contraprestação","R$ "+fmt(contrAno)+" mi/ano","R$ "+fmt(contrAno/12)+" mi/mês")}
       ${kpi("Unidades",fmtInt.format(unidades),"Escolas no recorte")}
       ${kpi("Vagas",fmtInt.format(vagas),"Vagas previstas")}
