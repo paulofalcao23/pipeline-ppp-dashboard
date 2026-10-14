@@ -452,7 +452,7 @@
   .table-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
   .count-pill { background: rgba(166,223,4,0.12); color: var(--astra-lime); border: 1px solid rgba(166,223,4,0.22); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
 
-  .table-scroll { overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+  .table-scroll { overflow: auto; max-height: calc(100vh - 150px); border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
   thead th {
     background: var(--surface-frame);
@@ -8114,12 +8114,14 @@ let sortKey="idProjeto", sortDir=1;
 const PGS={};
 function pg(sfx){ return PGS[sfx]||(PGS[sfx]={page:1,size:20}); }
 function resetPages(){ Object.values(PGS).forEach(s=>s.page=1); }
-const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","valorContrato","vencedor"];
+const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","tipoEscopo","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","equity"];
+const EQUITY_PCT=0.30;   // Equity = 30% do CAPEX (coluna calculada; troque aqui para mudar o percentual)
+function equityOf(p){ const n=num(p.capex); return isFinite(n)? n*EQUITY_PCT : NaN; }
 // Rótulos de colunas da tabela que não são campos diretos (calculadas).
-const COL_LABELS={editalPrevisto:"Edital previsto"};
+const COL_LABELS={editalPrevisto:"Edital previsto",tipoEscopo:"Tipo",equity:"Equity (R$ mi)"};
 let TBL_ROWS=[], TBL_SFX="";
 // Colunas editáveis direto na grade (clique na célula, digite, Enter grava e desce para a linha de baixo).
-const INLINE_KEYS=new Set(["capex","valorContrato","numUnidades","vencedor","estruturador","uf","municipios","regiao","tipoEnte","fase"]);
+const INLINE_KEYS=new Set(["capex","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
 function renderTable(rows,sfx){
   sfx=sfx||""; TBL_ROWS=rows; TBL_SFX=sfx;
   const st=pg(sfx);
@@ -8130,7 +8132,7 @@ function renderTable(rows,sfx){
   // Só compara como número quando AMBOS os valores são numéricos puros (sem letras).
   // Evita que IDs tipo "PPP-001" sejam lidos como -1 (o hífen virava sinal negativo).
   const isNumStr=v=>{ const s=String(v==null?"":v).trim(); return s!=="" && /^-?[\d.,\s]*\d[\d.,\s]*$/.test(s); };
-  const getSort=(p)=> sortKey==="editalPrevisto" ? editalPrevisto(p) : p[sortKey];
+  const getSort=(p)=> sortKey==="editalPrevisto" ? editalPrevisto(p) : (sortKey==="equity" ? equityOf(p) : p[sortKey]);
   const sorted=[...rows].sort((a,b)=>{ let x=getSort(a),y=getSort(b);
     if(isNumStr(x)&&isNumStr(y)){ const nx=num(x),ny=num(y); if(isFinite(nx)&&isFinite(ny)) return (nx-ny)*sortDir; }
     return String(x==null?"":x).localeCompare(String(y==null?"":y),"pt-BR",{numeric:true})*sortDir; });
@@ -8144,6 +8146,7 @@ function renderTable(rows,sfx){
       if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
         return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
       if(k==="capex"||k==="valorContrato"){const n=num(p[k]);return isFinite(n)?fmt(n):"";}
+      if(k==="equity"){ const n=equityOf(p); return isFinite(n)?fmt(n):""; }
       if(k==="editalPrevisto") return esc(editalPrevisto(p));
       return esc(p[k]??""); };
     const ed=k=>(!READ_ONLY && INLINE_KEYS.has(k))?` class="cell-edit" data-ce="${p.id}" data-ck="${k}" title="Clique para editar"`:"";
