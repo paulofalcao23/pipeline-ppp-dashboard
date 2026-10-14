@@ -481,6 +481,10 @@
   .prio-Baixa { color: var(--txt-2); }
   
   .row-actions { display: flex; gap: 6px; }
+  td.cell-edit { cursor: text; }
+  td.cell-edit:hover { box-shadow: inset 0 0 0 1px var(--astra-lime, #b6e14a); background: rgba(182,225,74,.07); }
+  td.cell-edit .cell-input { width: 100%; min-width: 90px; box-sizing: border-box; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--astra-lime, #b6e14a); background: var(--card-2, #1b2740); color: var(--txt, inherit); font: inherit; }
 
   /* ---------- Modal / form ---------- */
   .modal-bg { position: fixed; inset: 0; background: rgba(0,12,28,.7); backdrop-filter: blur(4px); display: none; z-index: 100; align-items: flex-start; justify-content: center; overflow: auto; padding: 40px 20px; }
@@ -8114,6 +8118,8 @@ const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","editalPre
 // Rótulos de colunas da tabela que não são campos diretos (calculadas).
 const COL_LABELS={editalPrevisto:"Edital previsto"};
 let TBL_ROWS=[], TBL_SFX="";
+// Colunas editáveis direto na grade (clique na célula, digite, Enter grava e desce para a linha de baixo).
+const INLINE_KEYS=new Set(["capex","valorContrato","numUnidades","vencedor","estruturador","uf","municipios","regiao","tipoEnte","fase"]);
 function renderTable(rows,sfx){
   sfx=sfx||""; TBL_ROWS=rows; TBL_SFX=sfx;
   const st=pg(sfx);
@@ -8140,7 +8146,8 @@ function renderTable(rows,sfx){
       if(k==="capex"||k==="valorContrato"){const n=num(p[k]);return isFinite(n)?fmt(n):"";}
       if(k==="editalPrevisto") return esc(editalPrevisto(p));
       return esc(p[k]??""); };
-    return `<tr>${TABLE_COLS.map(k=>`<td>${cell(k)}</td>`).join("")}
+    const ed=k=>(!READ_ONLY && INLINE_KEYS.has(k))?` class="cell-edit" data-ce="${p.id}" data-ck="${k}" title="Clique para editar"`:"";
+    return `<tr data-row="${p.id}">${TABLE_COLS.map(k=>`<td${ed(k)}>${cell(k)}</td>`).join("")}
       <td><div class="row-actions">
         <button class="btn sm ghost-dark" data-edit="${p.id}">${READ_ONLY?"Ver":"Editar"}</button>
         <button class="btn sm ghost-dark" data-pdf="${p.id}">PDF</button>
@@ -8150,6 +8157,7 @@ function renderTable(rows,sfx){
   thead.querySelectorAll("th[data-sk]").forEach(th=>th.onclick=()=>{ const k=th.dataset.sk;
     if(sortKey===k) sortDir*=-1; else {sortKey=k;sortDir=1;} st.page=1; renderTable(TBL_ROWS,sfx); });
   tbody.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openModal(b.dataset.edit));
+  tbody.querySelectorAll("td.cell-edit").forEach(td=>td.onclick=()=>startCellEdit(td));
   tbody.querySelectorAll("[data-pdf]").forEach(b=>b.onclick=()=>printFichas([byId2(b.dataset.pdf)]));
   tbody.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteFromTable(b.dataset.del));
   tbody.querySelectorAll("[data-fav]").forEach(c=>c.onchange=()=>toggleFavorito(c.dataset.fav,c.checked));
@@ -8424,6 +8432,45 @@ function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,
 let toastT;
 function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),3000); }
+
+/* ---------- Edição direta na grade ---------- */
+let CE_DIRTY=false, CE_ACTIVE=null;
+function ceDisplay(k,p){
+  if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
+    return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
+  if(k==="capex"||k==="valorContrato"){ const n=num(p[k]); return isFinite(n)?fmt(n):""; }
+  return esc(p[k]??"");
+}
+function startCellEdit(td){
+  if(READ_ONLY || td.querySelector("input,select")) return;
+  const id=td.dataset.ce, k=td.dataset.ck, p=byId2(id); if(!p) return;
+  const f=FIELD_BY_KEY[k]; const old=p[k]??"";
+  let el;
+  if(f.t==="select"){ const opts=(old && !f.opts.includes(old))? f.opts.concat([old]) : f.opts;
+    el=document.createElement("select");
+    el.innerHTML='<option value=""></option>'+opts.map(o=>`<option ${o===old?"selected":""}>${esc(o)}</option>`).join("");
+  } else { el=document.createElement("input"); el.value=old; if(f.t==="num") el.inputMode="decimal"; }
+  el.className="cell-input";
+  td.innerHTML=""; td.appendChild(el); el.focus(); if(el.select && el.tagName==="INPUT") el.select();
+  let done=false;
+  const finish=async(save,goNext)=>{
+    if(done) return; done=true;
+    const nv=el.value; let changed=false;
+    if(save && String(nv)!==String(old)){ p[k]=nv; changed=true; }
+    td.innerHTML=ceDisplay(k,p);
+    if(changed){ CE_DIRTY=true; persist(p); }
+    let next=null;
+    if(goNext){ const tr=td.parentElement.nextElementSibling;
+      next=tr&&tr.querySelector(`td.cell-edit[data-ck="${k}"]`); }
+    if(next){ startCellEdit(next); }
+    else if(CE_DIRTY){ CE_DIRTY=false; renderAll(); }
+  };
+  el.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){ e.preventDefault(); finish(true,true); }
+    else if(e.key==="Escape"){ e.preventDefault(); finish(false,false); }
+  });
+  el.addEventListener("blur",()=>setTimeout(()=>finish(true,false),0));
+}
 
 /* ---------- Edição em lote (aplica um valor a todos os projetos filtrados) ---------- */
 const BATCH_SKIP = new Set(["nome","idProjeto"]);
