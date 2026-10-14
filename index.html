@@ -7371,6 +7371,7 @@ const FIELDS = [
 const FIELD_BY_KEY = {};
 FIELDS.forEach(g=>g.items.forEach(f=>FIELD_BY_KEY[f.k]=f));
 const ALL_KEYS = Object.keys(FIELD_BY_KEY);
+FIELD_BY_KEY.contraprestacaoAnual = {k:"contraprestacaoAnual",l:"Contraprestação Máx. Anual (R$ mi)",t:"num",money:true};   // calculado no formulário; editável na grade e no lote
 // Campos que existem só no app (não vêm da planilha PIPELINE) — preservados no import CSV.
 const APP_ONLY_KEYS = ["dataPublicacaoEdital","triPrevisto","anoPrevisto"];
 
@@ -8159,8 +8160,15 @@ let sortKey="idProjeto", sortDir=1;
 const PGS={};
 function pg(sfx){ return PGS[sfx]||(PGS[sfx]={page:1,size:20}); }
 function resetPages(){ Object.values(PGS).forEach(s=>s.page=1); }
-const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","tipoEscopo","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","equity"];
+const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","tipoEscopo","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","equity","contraprestacaoMensal","contraprestacaoAnual"];
 const EQUITY_PCT=0.30;   // Padrão: Equity = 30% do CAPEX quando o projeto não tem valor próprio (troque aqui o percentual)
+// Contraprestação: mensal e anual andam juntas (anual = mensal × 12). Editou um, o outro é recalculado.
+function syncContrap(p,key){
+  if(key==="contraprestacaoMensal"){ const m=num(p.contraprestacaoMensal);
+    p.contraprestacaoAnual=isFinite(m)? String(Number((m*12).toFixed(6))) : ""; }
+  else if(key==="contraprestacaoAnual"){ const a=num(p.contraprestacaoAnual);
+    p.contraprestacaoMensal=isFinite(a)? String(Number((a/12).toFixed(6))) : ""; }
+}
 function equityDefault(capex){ const n=num(capex); return isFinite(n)? Math.round(n*EQUITY_PCT*1e6)/1e6 : ""; }
 // Mantém Equity gravado junto do CAPEX: vazio recebe 30% do CAPEX; se estava no padrão e o CAPEX mudou, acompanha.
 function syncEquity(p, oldCapex){
@@ -8173,10 +8181,11 @@ function equityOf(p){
   const own=num(p.equity); if(p.equity!=="" && p.equity!=null && isFinite(own)) return own;   // ajuste pontual do projeto
   const n=num(p.capex); return isFinite(n)? Math.round(n*EQUITY_PCT*1e6)/1e6 : NaN; }
 // Rótulos de colunas da tabela que não são campos diretos (calculadas).
-const COL_LABELS={editalPrevisto:"Edital previsto",tipoEscopo:"Tipo",equity:"Equity (R$ mi)"};
+const COL_LABELS={editalPrevisto:"Edital previsto",tipoEscopo:"Tipo",equity:"Equity (R$ mi)",contraprestacaoMensal:"Contrapr. mensal (R$ mi)",contraprestacaoAnual:"Contrapr. anual (R$ mi)"};
 let TBL_ROWS=[], TBL_SFX="";
 // Colunas editáveis direto na grade (clique na célula, digite, Enter grava e desce para a linha de baixo).
-const INLINE_KEYS=new Set(["capex","equity","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
+const MONEY_GRID=new Set(["capex","valorContrato","contraprestacaoMensal","contraprestacaoAnual"]);   // colunas de valor da grade (R$ mi)
+const INLINE_KEYS=new Set(["capex","equity","contraprestacaoMensal","contraprestacaoAnual","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
 function renderTable(rows,sfx){
   sfx=sfx||""; TBL_ROWS=rows; TBL_SFX=sfx;
   const st=pg(sfx);
@@ -8200,7 +8209,7 @@ function renderTable(rows,sfx){
       if(k==="favorito") return `<input type="checkbox" data-fav="${p.id}" ${p.favorito?"checked":""} ${READ_ONLY?"disabled":""} title="Favorito ASTRA" style="width:18px;height:18px;cursor:pointer;accent-color:var(--astra-lime-dk)">`;
       if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
         return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
-      if(k==="capex"||k==="valorContrato"){const n=num(p[k]);return isFinite(n)?fmt(n):"";}
+      if(MONEY_GRID.has(k)){const n=num(p[k]);return isFinite(n)?fmt(n):"";}
       if(k==="equity"){ const n=equityOf(p); return isFinite(n)?fmt(n):""; }
       if(k==="editalPrevisto") return esc(editalPrevisto(p));
       return esc(p[k]??""); };
@@ -8516,7 +8525,7 @@ let CE_DIRTY=false, CE_ACTIVE=null;
 function ceDisplay(k,p){
   if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
     return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
-  if(k==="capex"||k==="valorContrato"){ const n=num(p[k]); return isFinite(n)?fmt(n):""; }
+  if(MONEY_GRID.has(k)){ const n=num(p[k]); return isFinite(n)?fmt(n):""; }
   if(k==="equity"){ const n=equityOf(p); return isFinite(n)?fmt(n):""; }
   return esc(p[k]??"");
 }
@@ -8538,7 +8547,12 @@ function startCellEdit(td){
   const finish=async(save,goNext)=>{
     if(done) return; done=true;
     const nv=el.value; let changed=false;
-    if(save && String(nv)!==String(f.t==="select"?old:init)){ p[k]=nv; changed=true; }
+    if(save && String(nv)!==String(f.t==="select"?old:init)){
+      let val=nv;
+      if(MONEY_GRID.has(k)||k==="equity"){ const mi=reaisToMi(nv); if(isFinite(mi)) val=String(mi); }   // aceita 209 · 0,850 · 850 mil · 5,3 bi
+      p[k]=val; changed=true;
+      if(k==="contraprestacaoMensal"||k==="contraprestacaoAnual") syncContrap(p,k);
+    }
     if(save && (k==="capex"||k==="equity")){   // grava o Equity junto: Enter na célula confirma o valor mostrado (padrão 30%)
       const eq0=p.equity, oc=(k==="capex"&&changed)? old : undefined;
       if(k==="equity" && goNext && !changed && (p.equity===""||p.equity==null)) syncEquity(p);
@@ -8563,7 +8577,7 @@ function startCellEdit(td){
 
 /* ---------- Edição em lote (aplica um valor a todos os projetos filtrados) ---------- */
 const BATCH_SKIP = new Set(["nome","idProjeto"]);
-function batchFields(){ const out=[]; FIELDS.forEach(g=>g.items.forEach(f=>{ if(!BATCH_SKIP.has(f.k)) out.push(f); })); return out; }
+function batchFields(){ const out=[]; FIELDS.forEach(g=>g.items.forEach(f=>{ if(!BATCH_SKIP.has(f.k)) out.push(f); })); out.push(FIELD_BY_KEY.contraprestacaoAnual); return out; }
 function batchTargets(){ return applyFilters(); }
 function openBatch(){
   if(guardMutation()) return;
@@ -8618,7 +8632,7 @@ async function applyBatch(){
   if(guardMutation()) return;
   const {f,val,todo}=batchChanges(); if(!todo.length) return;
   if(!confirm(`Gravar "${f.l}" = ${val===true?"Sim":(val===false?"Não":val)} em ${todo.length} projetos?`)) return;
-  todo.forEach(p=>{ const oc=p.capex; p[f.k]=val; if(f.k==="capex"||f.k==="equity") syncEquity(p, f.k==="capex"? oc : undefined); });
+  todo.forEach(p=>{ const oc=p.capex; p[f.k]=val; if(f.k==="capex"||f.k==="equity") syncEquity(p, f.k==="capex"? oc : undefined); syncContrap(p,f.k); });
   closeBatch();
   await persist(todo);
   renderAll(); toast(`${todo.length} projetos atualizados.`);
