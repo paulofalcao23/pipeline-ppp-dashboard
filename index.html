@@ -452,7 +452,13 @@
   .table-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
   .count-pill { background: rgba(166,223,4,0.12); color: var(--astra-lime); border: 1px solid rgba(166,223,4,0.22); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
 
-  .table-scroll { overflow: auto; max-height: calc(100vh - 150px); border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+  .table-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+  .table-scroll::-webkit-scrollbar { display: none; }
+  /* Barra de rolagem horizontal fixa na parte de baixo da janela (acompanha a tabela enquanto ela estiver na tela). */
+  .hscroll-proxy { position: sticky; bottom: 0; z-index: 20; overflow-x: auto; overflow-y: hidden; height: 18px;
+    background: var(--bg, #0b1630); border-top: 1px solid var(--border); margin-top: 4px; }
+  .hscroll-proxy > div { height: 1px; }
+  .hscroll-proxy[hidden] { display: none; }
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
   thead th {
     background: var(--surface-frame);
@@ -8230,6 +8236,23 @@ function renderTable(rows,sfx){
   tbody.querySelectorAll("[data-fav]").forEach(c=>c.onchange=()=>toggleFavorito(c.dataset.fav,c.checked));
   document.getElementById("count-pill"+sfx).textContent=total+" projeto"+(total!==1?"s":"");
   renderPager(total,pages,sfx);
+  setupHScroll(tbody.closest(".table-scroll"));
+}
+/* Barra de rolagem horizontal "espelho", grudada no rodapé da janela, sincronizada com a tabela. */
+function setupHScroll(box){
+  if(!box) return;
+  let px=box.nextElementSibling;
+  if(!px || !px.classList.contains("hscroll-proxy")){
+    px=document.createElement("div"); px.className="hscroll-proxy"; px.innerHTML="<div></div>";
+    box.parentNode.insertBefore(px,box.nextSibling);
+    let lock=false;
+    px.addEventListener("scroll",()=>{ if(lock){lock=false;return;} lock=true; box.scrollLeft=px.scrollLeft; });
+    box.addEventListener("scroll",()=>{ if(lock){lock=false;return;} lock=true; px.scrollLeft=box.scrollLeft; });
+    window.addEventListener("resize",()=>setupHScroll(box));
+  }
+  const sync=()=>{ const w=box.scrollWidth, vis=box.clientWidth;
+    px.firstChild.style.width=w+"px"; px.hidden=!(w>vis+1); };
+  sync(); requestAnimationFrame(sync);
 }
 function renderPager(total,pages,sfx){
   sfx=sfx||""; const st=pg(sfx);
