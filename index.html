@@ -7343,6 +7343,7 @@ const FIELDS = [
  ]},
  {g:"4 · Financeiro", items:[
    {k:"capex",l:"Total CAPEX (R$ mi)",t:"num"},
+   {k:"equity",l:"Equity (R$ mi)",t:"num",hint:"Se ficar vazio, usa 30% do CAPEX automaticamente."},
    {k:"opexAno",l:"Total OPEX / ano (R$ mi)",t:"num"},
    {k:"contraprestacaoMensal",l:"Contraprestação Máx. Mensal (R$ mi)",t:"num"},
    {k:"contraprestacaoAnual",l:"Contraprestação Máx. Anual (R$ mi)",t:"num"},
@@ -7430,7 +7431,7 @@ const SB_COLS = {
   idProjeto:"id_projeto", nome:"nome", fase:"fase", tipoEnte:"tipo_ente", uf:"uf",
   municipios:"municipios", regiao:"regiao", tipoEscopo:"tipo_escopo", nivelEnsino:"nivel_ensino",
   numUnidades:"num_unidades", numVagas:"num_vagas", numSalas:"num_salas", areaTotal:"area_total",
-  prazoConcessao:"prazo_concessao", capex:"capex", opexAno:"opex_ano",
+  prazoConcessao:"prazo_concessao", capex:"capex", equity:"equity", opexAno:"opex_ano",
   contraprestacaoMensal:"contraprestacao_mensal", contraprestacaoAnual:"contraprestacao_anual",
   valorContrato:"valor_contrato", haveraAporte:"havera_aporte", valorAporte:"valor_aporte",
   estruturaGarantia:"estrutura_garantia", estruturador:"estruturador", observacoes:"observacoes",
@@ -7438,7 +7439,7 @@ const SB_COLS = {
   desagio:"desagio", favorito:"favorito", dataPublicacaoEdital:"data_publicacao_edital",
   triPrevisto:"tri_previsto", anoPrevisto:"ano_previsto",
 };
-const SB_NUM = new Set(["num_unidades","num_vagas","num_salas","area_total","prazo_concessao","capex",
+const SB_NUM = new Set(["equity","num_unidades","num_vagas","num_salas","area_total","prazo_concessao","capex",
   "opex_ano","contraprestacao_mensal","contraprestacao_anual","valor_contrato","valor_aporte",
   "valor_final_contrato","desagio"]);
 function toRow(p){ const r={}; for(const k in SB_COLS){ const col=SB_COLS[k]; let v=p[k];
@@ -8115,13 +8116,15 @@ const PGS={};
 function pg(sfx){ return PGS[sfx]||(PGS[sfx]={page:1,size:20}); }
 function resetPages(){ Object.values(PGS).forEach(s=>s.page=1); }
 const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","tipoEscopo","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","equity"];
-const EQUITY_PCT=0.30;   // Equity = 30% do CAPEX (coluna calculada; troque aqui para mudar o percentual)
-function equityOf(p){ const n=num(p.capex); return isFinite(n)? n*EQUITY_PCT : NaN; }
+const EQUITY_PCT=0.30;   // Padrão: Equity = 30% do CAPEX quando o projeto não tem valor próprio (troque aqui o percentual)
+function equityOf(p){
+  const own=num(p.equity); if(p.equity!=="" && p.equity!=null && isFinite(own)) return own;   // ajuste pontual do projeto
+  const n=num(p.capex); return isFinite(n)? Math.round(n*EQUITY_PCT*1e6)/1e6 : NaN; }
 // Rótulos de colunas da tabela que não são campos diretos (calculadas).
 const COL_LABELS={editalPrevisto:"Edital previsto",tipoEscopo:"Tipo",equity:"Equity (R$ mi)"};
 let TBL_ROWS=[], TBL_SFX="";
 // Colunas editáveis direto na grade (clique na célula, digite, Enter grava e desce para a linha de baixo).
-const INLINE_KEYS=new Set(["capex","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
+const INLINE_KEYS=new Set(["capex","equity","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
 function renderTable(rows,sfx){
   sfx=sfx||""; TBL_ROWS=rows; TBL_SFX=sfx;
   const st=pg(sfx);
@@ -8442,6 +8445,7 @@ function ceDisplay(k,p){
   if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
     return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
   if(k==="capex"||k==="valorContrato"){ const n=num(p[k]); return isFinite(n)?fmt(n):""; }
+  if(k==="equity"){ const n=equityOf(p); return isFinite(n)?fmt(n):""; }
   return esc(p[k]??"");
 }
 function startCellEdit(td){
@@ -8452,14 +8456,17 @@ function startCellEdit(td){
   if(f.t==="select"){ const opts=(old && !f.opts.includes(old))? f.opts.concat([old]) : f.opts;
     el=document.createElement("select");
     el.innerHTML='<option value=""></option>'+opts.map(o=>`<option ${o===old?"selected":""}>${esc(o)}</option>`).join("");
-  } else { el=document.createElement("input"); el.value=old; if(f.t==="num") el.inputMode="decimal"; }
+  } else { el=document.createElement("input");
+    if(k==="equity" && old===""){ const d=equityOf(p); el.value=isFinite(d)?String(d):""; } else el.value=old;   // mostra o padrão (30%); só vira valor próprio se for alterado
+    if(f.t==="num") el.inputMode="decimal"; }
+  const init=el.value;
   el.className="cell-input";
   td.innerHTML=""; td.appendChild(el); el.focus(); if(el.select && el.tagName==="INPUT") el.select();
   let done=false;
   const finish=async(save,goNext)=>{
     if(done) return; done=true;
     const nv=el.value; let changed=false;
-    if(save && String(nv)!==String(old)){ p[k]=nv; changed=true; }
+    if(save && String(nv)!==String(f.t==="select"?old:init)){ p[k]=nv; changed=true; }
     td.innerHTML=ceDisplay(k,p);
     if(changed){ CE_DIRTY=true; persist(p); }
     let next=null;
