@@ -7398,6 +7398,15 @@ function addMonths(dateStr,months){ if(!dateStr||!isFinite(months)) return "";
 const fmtNum=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
 const fmtInt=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0});
 function fmt(v){ return isFinite(v)? fmtNum.format(v):"—"; }
+// Valor em R$ milhões -> texto na escala certa: "R$ 850 mil", "R$ 150 mi", "R$ 5,31 bi".
+function fmtMoneyMi(v){
+  if(!isFinite(v)) return "—";
+  const a=Math.abs(v);
+  if(a>=1000) return "R$ "+fmtNum.format(v/1000)+" bi";
+  if(a>=1) return "R$ "+fmtNum.format(v)+" mi";
+  if(a===0) return "R$ 0";
+  return "R$ "+fmtInt.format(v*1000)+" mil";
+}
 function fmtDate(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||"")); return m? m[3]+"/"+m[2]+"/"+m[1] : String(iso||""); }
 /* Previsão do edital para exibição: data exata tem prioridade; senão TRI/ano aproximado. */
 function editalPrevisto(p){
@@ -7435,9 +7444,20 @@ let SUPA_MODE = false;   // true quando os dados vêm do Supabase
 // app(camelCase) <-> row(snake_case)
 /* Formulário em R$ (reais); o banco, a grade, os cartões e os relatórios seguem em R$ milhões. */
 function miToReais(v){ const n=num(v); return isFinite(n)? n*1e6 : NaN; }
-function reaisToMi(v){ const n=num(v); return isFinite(n)? Number((n/1e6).toFixed(6)) : NaN; }
-function fmtReaisInput(v){ const r=miToReais(v); return isFinite(r)? r.toLocaleString("pt-BR",{maximumFractionDigits:2}) : String(v??""); }
-function fieldLabelForm(f){ return f.money? f.l.replace("(R$ mi)","(R$)") : f.l; }
+// Campo de valor: digite em milhões (209 · 1,5 · 0,850) ou com sufixo ("850 mil", "5,3 bi"); também aceita reais completos.
+function reaisToMi(v){
+  const m=/^\s*(?:R\$\s*)?(-?[\d.,]+)\s*(bilh[oõ]es|bilh[aã]o|bi|b|milh[oõ]es|milh[aã]o|mi|m|mil|k)?\s*$/i.exec(String(v==null?"":v));
+  if(!m) return NaN;
+  const n=num(m[1]); if(!isFinite(n)) return NaN;
+  const suf=(m[2]||"").toLowerCase();
+  // Sem sufixo: o número é em MILHÕES (209 = R$ 209 mi; 0,850 = R$ 850 mil). Número muito grande (>= 100.000)
+  // só pode ser reais completos (209.000.000), então é convertido.
+  if(!suf) return Number((n>=1e5? n/1e6 : n).toFixed(6));
+  const mult=/^b/.test(suf)?1e9 : (/^milh/.test(suf)||suf==="mi"||suf==="m")?1e6 : 1e3;
+  return Number((n*mult/1e6).toFixed(6));
+}
+function fmtReaisInput(v){ const n=num(v); return isFinite(n)? n.toLocaleString("pt-BR",{maximumFractionDigits:6,useGrouping:false}) : String(v??""); }   // mostra em milhões, igual ao que se digita
+function fieldLabelForm(f){ return f.l; }
 const SB_COLS = {
   idProjeto:"id_projeto", nome:"nome", fase:"fase", tipoEnte:"tipo_ente", uf:"uf",
   municipios:"municipios", regiao:"regiao", tipoEscopo:"tipo_escopo", nivelEnsino:"nivel_ensino",
@@ -7920,9 +7940,9 @@ function renderDashboard(rows,sfx){
   const kpi=(l,v,s,acc,icon)=>`<div class="kpi ${acc?"accent":""}"><div class="kpi-ico">${icon||""}</div><div class="label">${l}</div><div class="value">${v}</div><div class="sub">${s||""}</div></div>`;
   k.innerHTML=
     kpi("Projetos",fmtInt.format(projVal),subProj,true,KPI_ICONS.briefcase)+
-    kpi("CAPEX Total","R$ "+fmt(capex)+" mi","Total do portfólio filtrado",false,KPI_ICONS.money)+
-    kpi("Equity","R$ "+fmt(equity)+" mi","Soma do Equity dos projetos filtrados",false,KPI_ICONS.pie)+
-    kpi("Contraprestação","R$ "+fmt(contrAno)+" mi/ano","R$ "+fmt(contrAno/12)+" mi/mês",false,KPI_ICONS.repeat)+
+    kpi("CAPEX Total",fmtMoneyMi(capex),"Total do portfólio filtrado",false,KPI_ICONS.money)+
+    kpi("Equity",fmtMoneyMi(equity),"Soma do Equity dos projetos filtrados",false,KPI_ICONS.pie)+
+    kpi("Contraprestação",fmtMoneyMi(contrAno)+"/ano",fmtMoneyMi(contrAno/12)+"/mês",false,KPI_ICONS.repeat)+
     kpi("Infraestrutura",fmtInt.format(unidades)+" Unidades",fmtInt.format(vagas)+" Vagas previstas",false,KPI_ICONS.building)+
     kpi("★ Favoritos",fmtInt.format(rows.filter(p=>p.favorito).length),"Acompanhados pela ASTRA",false,KPI_ICONS.star);
   fitKpiValues(k);
@@ -8266,7 +8286,7 @@ function openModal(id){
 function fieldHTML(f,p){
   let v=p[f.k]??""; if(f.money && v!=="") v=fmtReaisInput(v); const wide=f.wide?'style="grid-column:1/-1"':"";
   const reqm=f.req?'<span class="req-mark" title="Campo obrigatório">*</span>':"";
-  const hint=f.hint?`<span class="field-hint">${esc(f.hint)}</span>`:"";
+  const hint=f.hint?`<span class="field-hint">${esc(f.hint)}</span>`:(f.money?`<span class="field-hint">Em milhões: 209 · 1,5 · 0,850 (=850 mil) · ou 5,3 bi</span>`:"");
   let ctrl;
   if(f.t==="select"){ const opts=(v && !f.opts.includes(v))? f.opts.concat([v]) : f.opts; // valor salvo fora da lista (ex.: ano antigo) continua visível
     ctrl=`<select data-fk="${f.k}"><option value=""></option>${
@@ -8457,9 +8477,9 @@ function reportHTML(rows,titulo,opts){
       <div class="rep-sub">Pipeline de PPPs Educacionais · ${esc(hoje)} · ${esc(opts.resumo||resumoFiltros())}</div></div></div>
     <div class="rep-kpis">
       ${kpi("Projetos",fmtInt.format(rows.length),ativos+" no funil ativo")}
-      ${kpi("CAPEX Total","R$ "+fmt(capex)+" mi","Investimento previsto")}
-      ${kpi("Equity","R$ "+fmt(equity)+" mi","Soma do Equity dos projetos")}
-      ${kpi("Contraprestação","R$ "+fmt(contrAno)+" mi/ano","R$ "+fmt(contrAno/12)+" mi/mês")}
+      ${kpi("CAPEX Total",fmtMoneyMi(capex),"Investimento previsto")}
+      ${kpi("Equity",fmtMoneyMi(equity),"Soma do Equity dos projetos")}
+      ${kpi("Contraprestação",fmtMoneyMi(contrAno)+"/ano",fmtMoneyMi(contrAno/12)+"/mês")}
       ${kpi("Unidades",fmtInt.format(unidades),"Escolas no recorte")}
       ${kpi("Vagas",fmtInt.format(vagas),"Vagas previstas")}
       ${kpi("Favoritos ★",fmtInt.format(favs),"Acompanhados pela ASTRA")}
