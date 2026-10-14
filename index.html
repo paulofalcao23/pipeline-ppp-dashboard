@@ -516,6 +516,11 @@
   
   .field input[readonly] { background: var(--bg); color: var(--txt-2); border-color: var(--border); }
   .field .req-mark { color: var(--danger); margin-left: 3px; font-weight: 700; }
+  .multi-opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .multi-opt { display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border:1px solid var(--border, rgba(255,255,255,.14));
+    border-radius:10px; background:rgba(0,0,0,.18); cursor:pointer; font-size:14px; text-transform:none; letter-spacing:0; font-weight:500; color:var(--txt-1, inherit); }
+  .multi-opt:has(input:checked) { border-color:var(--astra-lime, #b6e14a); background:rgba(182,225,74,.14); }
+  .multi-opt input { accent-color: var(--astra-lime, #b6e14a); width:16px; height:16px; margin:0; }
   .field .field-hint { font-size: 11px; color: var(--txt-2); margin-top: 2px; line-height: 1.4; }
   .field input.field-error, .field select.field-error, .field textarea.field-error { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(220,38,38,.15); }
   
@@ -7315,6 +7320,8 @@ const ANOS_PREV = [0,1,2].map(i=>String(ANO_ATUAL+i));
 
 /* ---------- Metadados de campos (form + tabela + export + ficha) ---------- */
 // type (t): text | num | date | select | textarea | bool
+const GARANTIAS = ["03 Contraprestações","FUNDEB","QESE, QSE","FPM","FPE","Outros"];
+const GARANTIA_SEP = "; ";
 const FIELDS = [
  {g:"1 · Identificação", items:[
    {k:"idProjeto",l:"ID Projeto",t:"text",hint:"Identificador da planilha, ex.: PPP-001."},
@@ -7342,22 +7349,21 @@ const FIELDS = [
    {k:"prazoConcessao",l:"Prazo de Concessão (anos)",t:"num"},
  ]},
  {g:"4 · Financeiro", items:[
-   {k:"capex",l:"Total CAPEX (R$ mi)",t:"num"},
-   {k:"equity",l:"Equity (R$ mi)",t:"num",hint:"Se ficar vazio, usa 30% do CAPEX automaticamente."},
-   {k:"opexAno",l:"Total OPEX / ano (R$ mi)",t:"num"},
-   {k:"contraprestacaoMensal",l:"Contraprestação Máx. Mensal (R$ mi)",t:"num"},
-   {k:"contraprestacaoAnual",l:"Contraprestação Máx. Anual (R$ mi)",t:"num"},
-   {k:"valorContrato",l:"Valor Total do Contrato (R$ mi)",t:"num"},
+   {k:"capex",l:"Total CAPEX (R$ mi)",money:true,t:"num"},
+   {k:"equity",l:"Equity (R$ mi)",money:true,t:"num",hint:"Se ficar vazio, usa 30% do CAPEX automaticamente."},
+   {k:"opexAno",l:"Total OPEX (R$ mi)",money:true,t:"num"},
+   {k:"contraprestacaoMensal",l:"Contraprestação Máx. Mensal (R$ mi)",money:true,t:"num",hint:"A contraprestação anual é calculada automaticamente (mensal × 12)."},
+   {k:"valorContrato",l:"Valor Total do Contrato (R$ mi)",money:true,t:"num"},
    {k:"haveraAporte",l:"Haverá Aporte Público?",t:"select",opts:SIM_NAO},
-   {k:"valorAporte",l:"Valor do Aporte (R$ mi)",t:"num"},
-   {k:"estruturaGarantia",l:"Estrutura de Garantia",t:"text"},
+   {k:"valorAporte",l:"Valor do Aporte (R$ mi)",money:true,t:"num"},
+   {k:"estruturaGarantia",l:"Estrutura de Garantia",t:"multi",opts:GARANTIAS,wide:true},
  ]},
  {g:"5 · Observações & Documentos", items:[
    {k:"observacoes",l:"Observações / Próx. Passo",t:"textarea",wide:true},
    {k:"linkDocumentos",l:"Link Documentos",t:"text",wide:true},
  ]},
  {g:"6 · Resultado da Licitação", items:[
-   {k:"valorFinalContrato",l:"Valor Final Contrato (R$ mi)",t:"num"},
+   {k:"valorFinalContrato",l:"Valor Final Contrato (R$ mi)",money:true,t:"num"},
    {k:"vencedor",l:"Vencedor",t:"text"},
    {k:"desagio",l:"Deságio (%)",t:"num"},
  ]},
@@ -7427,6 +7433,11 @@ let sb = (SB_ON && window.supabase) ? window.supabase.createClient(SUPABASE_URL,
 let SUPA_MODE = false;   // true quando os dados vêm do Supabase
 
 // app(camelCase) <-> row(snake_case)
+/* Formulário em R$ (reais); o banco, a grade, os cartões e os relatórios seguem em R$ milhões. */
+function miToReais(v){ const n=num(v); return isFinite(n)? n*1e6 : NaN; }
+function reaisToMi(v){ const n=num(v); return isFinite(n)? Number((n/1e6).toFixed(6)) : NaN; }
+function fmtReaisInput(v){ const r=miToReais(v); return isFinite(r)? r.toLocaleString("pt-BR",{maximumFractionDigits:2}) : String(v??""); }
+function fieldLabelForm(f){ return f.money? f.l.replace("(R$ mi)","(R$)") : f.l; }
 const SB_COLS = {
   idProjeto:"id_projeto", nome:"nome", fase:"fase", tipoEnte:"tipo_ente", uf:"uf",
   municipios:"municipios", regiao:"regiao", tipoEscopo:"tipo_escopo", nivelEnsino:"nivel_ensino",
@@ -7703,7 +7714,7 @@ const CSV_MAP={ // header normalizado -> [key, tipo]
   "n vagas previstas":["numVagas","num"],"no vagas previstas":["numVagas","num"],
   "n salas de aula":["numSalas","num"],"no salas de aula":["numSalas","num"],
   "area total (m2)":["areaTotal","num"],"prazo de concessao (anos)":["prazoConcessao","num"],
-  "total capex (r$ mi)":["capex","mi"],"total opex / ano (r$ mi)":["opexAno","mi"],
+  "total capex (r$ mi)":["capex","mi"],"total opex / ano (r$ mi)":["opexAno","mi"],"total opex (r$ mi)":["opexAno","mi"],
   "contraprestacao max. mensal (r$ mi)":["contraprestacaoMensal","mi"],
   "contraprestacao max. anual (r$ mi)":["contraprestacaoAnual","mi"],
   "valor total do contrato":["valorContrato","mi"],
@@ -8244,15 +8255,16 @@ function openModal(id){
   }));
   // Equity acompanha o CAPEX digitado enquanto estiver no padrão
   const cx=body.querySelector('[data-fk="capex"]'), eq=body.querySelector('[data-fk="equity"]');
-  if(cx && eq){ let last=cx.value;
-    cx.addEventListener("input",()=>{ const od=equityDefault(last); const cur=eq.value.trim();
-      if(cur==="" || (od!=="" && num(cur)===od)){ const nd=equityDefault(cx.value); eq.value=nd===""?"":String(nd); }
-      last=cx.value; }); }
+  if(cx && eq){ const mi=el=>{ const n=reaisToMi(el.value); return isFinite(n)? n : ""; };   // campos do formulário estão em R$
+    let last=mi(cx);
+    cx.addEventListener("input",()=>{ const od=equityDefault(last); const cur=mi(eq);
+      if(eq.value.trim()==="" || (od!=="" && cur===od)){ const nd=equityDefault(mi(cx)); eq.value=nd===""?"":fmtReaisInput(nd); }
+      last=mi(cx); }); }
   document.getElementById("modal-bg").classList.add("open");
   const first=body.querySelector("[data-fk]"); if(first) setTimeout(()=>{ try{ first.focus(); }catch(e){} },50);
 }
 function fieldHTML(f,p){
-  const v=p[f.k]??""; const wide=f.wide?'style="grid-column:1/-1"':"";
+  let v=p[f.k]??""; if(f.money && v!=="") v=fmtReaisInput(v); const wide=f.wide?'style="grid-column:1/-1"':"";
   const reqm=f.req?'<span class="req-mark" title="Campo obrigatório">*</span>':"";
   const hint=f.hint?`<span class="field-hint">${esc(f.hint)}</span>`:"";
   let ctrl;
@@ -8263,14 +8275,24 @@ function fieldHTML(f,p){
   else if(f.t==="bool"){ ctrl=`<select data-fk="${f.k}"><option value="false" ${!v?"selected":""}>Não</option><option value="true" ${v?"selected":""}>Sim</option></select>`; }
   else if(f.t==="date"){ ctrl=`<input type="date" data-fk="${f.k}" value="${esc(v)}">`; }
   else if(f.t==="num"){ ctrl=`<input inputmode="decimal" data-fk="${f.k}" value="${esc(v)}">`; }
+  else if(f.t==="multi"){ const sel=String(v||"").split(GARANTIA_SEP).map(x=>x.trim()).filter(Boolean);
+    const opts=f.opts.concat(sel.filter(x=>!f.opts.includes(x)));   // valor antigo (texto livre) continua visível e marcado
+    ctrl=`<div class="multi-opts" data-fk="${f.k}" data-multi="1">${opts.map(o=>
+      `<label class="multi-opt"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?"checked":""}><span>${esc(o)}</span></label>`).join("")}</div>`; }
   else { ctrl=`<input data-fk="${f.k}" value="${esc(v)}" ${f.req?"required":""}>`; }
-  return `<div class="field" ${wide}><label>${esc(f.l)}${reqm}</label>${ctrl}${hint}</div>`;
+  return `<div class="field" ${wide}><label>${esc(fieldLabelForm(f))}${reqm}</label>${ctrl}${hint}</div>`;
 }
 function readForm(){
   const p = editingId? Object.assign({},byId2(editingId)) : {id:uid()};
   document.querySelectorAll("#modal-body [data-fk]").forEach(inp=>{
     const f=FIELD_BY_KEY[inp.dataset.fk];
-    let val=inp.value; if(f.t==="bool") val=(val==="true"); p[f.k]=val; });
+    if(f.t==="multi"){ p[f.k]=[...inp.querySelectorAll("input:checked")].map(c=>c.value).join(GARANTIA_SEP); return; }
+    let val=inp.value; if(f.t==="bool") val=(val==="true");
+    if(f.money){ const mi=reaisToMi(val); val=isFinite(mi)? String(mi) : (String(val).trim()===""? "" : val); }
+    p[f.k]=val; });
+  // Contraprestação anual = mensal × 12 (campo não é mais digitado). Sem mensal, preserva o valor já salvo.
+  const m=num(p.contraprestacaoMensal);
+  if(isFinite(m) && p.contraprestacaoMensal!=="") p.contraprestacaoAnual=Math.round(m*12*1e6)/1e6;
   return p;
 }
 /* Ativa a aba que contém o campo, foca e destaca o erro (validação inline). */
@@ -8527,7 +8549,7 @@ function openBatch(){
   if(guardMutation()) return;
   const rows=batchTargets();
   if(!rows.length){ toast("Nenhum projeto na lista filtrada."); return; }
-  const opts=batchFields().map(f=>`<option value="${f.k}">${esc(f.l)}</option>`).join("");
+  const opts=batchFields().map(f=>`<option value="${f.k}">${esc(fieldLabelForm(f))}</option>`).join("");
   document.getElementById("batch-body").innerHTML=
     `<p style="margin-top:0">Vai valer para os <b>${rows.length} projetos</b> da lista filtrada (todas as páginas). `+
     `Ajuste os filtros antes, se precisar.</p>`+
@@ -8553,6 +8575,7 @@ function batchValue(){
   const f=FIELD_BY_KEY[document.getElementById("batch-field").value];
   const el=document.querySelector("#batch-value [data-fk]"); if(!el) return {f,val:""};
   let val=el.value; if(f.t==="bool") val=(val==="true");
+  if(f.money){ const mi=reaisToMi(val); val=isFinite(mi)? String(mi) : ""; }   // lote digitado em R$ -> grava em R$ mi
   return {f,val};
 }
 function batchChanges(){
