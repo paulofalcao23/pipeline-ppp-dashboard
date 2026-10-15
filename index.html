@@ -7520,7 +7520,7 @@ const ANOS_PREV = [0,1,2].map(i=>String(ANO_ATUAL+i));
 
 /* ---------- Metadados de campos (form + tabela + export + ficha) ---------- */
 // type (t): text | num | date | select | textarea | bool
-const ETAPAS = ["Radar","Favorito","Análise interna","Go / No Go","Proposta","Ganho","No Go","Perdido"];   // funil ASTRA
+const ETAPAS = ["Radar","Favorito","Análise interna","Proposta","Ganho","No Go","Perdido"];   // funil ASTRA
 const ETAPAS_SAIDA = ["No Go","Perdido"];   // saem do funil e exigem motivo
 const GARANTIAS = ["03 Contraprestações","FUNDEB","QESE, QSE","FPM","FPE","Outros"];
 const GARANTIA_SEP = "; ";
@@ -7529,7 +7529,7 @@ const FIELDS = [
    {k:"idProjeto",l:"ID Projeto",t:"text",hint:"Identificador da planilha, ex.: PPP-001."},
    {k:"nome",l:"Nome do Projeto",t:"text",req:true,wide:true},
    {k:"fase",l:"Fase do Projeto",t:"select",opts:FASES},
-   {k:"etapaAstra",l:"Etapa ASTRA (funil)",t:"select",opts:ETAPAS,hint:"Radar → Favorito → Análise interna → Go / No Go → Proposta → Ganho. Saídas: No Go e Perdido."},
+   {k:"etapaAstra",l:"Etapa ASTRA (funil)",t:"select",opts:ETAPAS,hint:"Radar → Favorito → Análise interna → Proposta → Ganho. Saídas: No Go e Perdido."},
    {k:"motivoEncerramento",l:"Motivo (No Go / Perdido)",t:"text",hint:"Obrigatório quando a etapa é No Go ou Perdido."},
    {k:"estruturador",l:"Estruturador",t:"text",hint:"Quem estrutura o projeto (ex.: BNDES, IFC, consultoria)."},
    {k:"triPrevisto",l:"Trimestre Previsto do Edital",t:"select",opts:TRIS,hint:"Prazo aproximado — dois cliques (TRI + ano) e pronto."},
@@ -8203,19 +8203,20 @@ function renderDashboard(rows,sfx){
 
   // Funil ASTRA: projetos por etapa (clique filtra); tooltip traz CAPEX, Equity e passagem da etapa anterior
   if(sfx==="prio"){
-    const grp=ETAPAS.map(e=>rows.filter(p=>etapaOf(p)===e));
+    const ET=ETAPAS.filter(e=>e!=="Radar");   // o Radar não entra na aba do funil
+    const grp=ET.map(e=>rows.filter(p=>etapaOf(p)===e));
     const cnt=grp.map(g=>g.length);
-    const cor=ETAPAS.map(e=>ETAPAS_SAIDA.includes(e)? DANGER_HEX : (e==="Ganho"?"#20CC92":LIME));
+    const cor=ET.map(e=>ETAPAS_SAIDA.includes(e)? DANGER_HEX : (e==="Ganho"?"#20CC92":LIME));
     CHARTS.push(new Chart(byId("ch-etapa"+sfx),{type:"bar",
-      data:{labels:ETAPAS.map((e,i)=>e+" ("+cnt[i]+")"),datasets:[{label:"Projetos",data:cnt,backgroundColor:cor,borderRadius:4}]},
+      data:{labels:ET.map((e,i)=>e+" ("+cnt[i]+")"),datasets:[{label:"Projetos",data:cnt,backgroundColor:cor,borderRadius:4}]},
       options:{indexAxis:"y",maintainAspectRatio:false,onHover:chartPointer,
         plugins:{legend:{display:false},tooltip:{callbacks:{
-          title:items=>ETAPAS[items[0].dataIndex],
+          title:items=>ET[items[0].dataIndex],
           afterBody:items=>{ const i=items[0].dataIndex, g=grp[i];
             const lin=["CAPEX: "+fmtMoneyMi(sum(g,"capex")),"Equity: "+fmtMoneyMi(sumEquity(g))];
-            if(i>0 && i<=5 && cnt[i-1]>0) lin.push("Passagem da etapa anterior: "+Math.round(cnt[i]/cnt[i-1]*100)+"%");
+            if(i>0 && i<=ET.indexOf("Ganho") && cnt[i-1]>0) lin.push("Passagem da etapa anterior: "+Math.round(cnt[i]/cnt[i-1]*100)+"%");
             lin.push("clique para filtrar"); return lin; }}}},
-        onClick:(e,els)=>{ if(els.length) aplicarFiltro("etapa", ETAPAS[els[0].index], "Etapa ASTRA"); },
+        onClick:(e,els)=>{ if(els.length) aplicarFiltro("etapa", ET[els[0].index], "Etapa ASTRA"); },
         scales:{x:{beginAtZero:true,ticks:{precision:0,color:AXIS_TXT},grid:{color:GRID}}, y:{ticks:{color:AXIS_TXT},grid:{display:false}}}}}));
   }
 
@@ -8523,7 +8524,8 @@ function renderPager(total,pages,sfx){
 function emFunil(p){ return etapaOf(p)!=="Radar"; }   // projetos que a ASTRA já tirou do Radar
 function diasEtapa(p){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(p.etapaData||"")); if(!m) return NaN;
   const d=new Date(+m[1],+m[2]-1,+m[3]), h=new Date(); h.setHours(0,0,0,0); return Math.max(0,Math.round((h-d)/86400000)); }
-function etapaOf(p){ return p.etapaAstra || (p.favorito?"Favorito":"Radar"); }
+function etapaOf(p){ const e=p.etapaAstra; if(e==="Go / No Go") return "Análise interna";   // etapa extinta
+  return e || (p.favorito?"Favorito":"Radar"); }
 function hojeISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 // Move o projeto de etapa (registra a data) e mantém a estrela de favorito coerente.
 function setEtapa(p,nova,motivo){
