@@ -923,7 +923,7 @@
         <button class="btn primary" id="rep-inv" style="align-self:flex-start">Gerar (<span id="cnt-rep-inv">0</span>)</button>
       </div>
     </div>
-    <div class="hint" style="margin-top:20px">Na janela de impressão, escolha <strong>"Salvar como PDF"</strong>. As fichas individuais por projeto continuam na aba <strong>Exportar</strong>.</div>
+    <div class="hint" style="margin-top:20px">Na janela de impressão, escolha <strong>"Salvar como PDF"</strong> e, em <strong>Mais definições</strong>, desmarque <strong>"Cabeçalhos e rodapés"</strong> (é o que imprime a data e o endereço do site nas bordas da página). As fichas individuais por projeto continuam na aba <strong>Exportar</strong>.</div>
   </section>
 
   <!-- ===== CONFIGURAÇÕES ===== -->
@@ -8720,10 +8720,10 @@ function reportHTML(rows,titulo,opts){
   let inv="", landscape="";
   if(opts.inventario){
     const ordenado=[...rows].sort((a,b)=>String(a.idProjeto).localeCompare(String(b.idProjeto),"pt-BR",{numeric:true}));
-    const cols=[["ID","7%"],["Projeto","21%"],["UF","5%"],["Fase","19%"],["Escopo","10%"],["Estruturador","14%"],["Edital previsto","9%"],["CAPEX (R$ mi)","7.5%",1],["Equity (R$ mi)","7.5%",1]];
+    const cols=[["ID","7%"],["Projeto","20%"],["UF","5%"],["Fase","18%"],["Escopo","9%"],["Estruturador","12%"],["Edital previsto","8%"],["Unidades","6%",1],["CAPEX (R$ mi)","7.5%",1],["Equity (R$ mi)","7.5%",1]];
     const colg="<colgroup>"+cols.map(c=>`<col style="width:${c[1]}">`).join("")+"</colgroup>";
     const thead="<thead><tr>"+cols.map(c=>`<th${c[2]?' class="num"':""}>${c[0]}</th>`).join("")+"</tr></thead>";
-    const tbody="<tbody>"+ordenado.map(p=>`<tr><td class="nowrap">${esc(p.idProjeto)}</td><td>${esc(p.nome)}${p.favorito?" ★":""}</td><td class="nowrap">${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.tipoEscopo)}</td><td>${esc(p.estruturador)}</td><td class="nowrap">${esc(editalPrevisto(p))}</td><td class="num">${isFinite(num(p.capex))?fmt(num(p.capex)):""}</td><td class="num">${isFinite(equityOf(p))?fmt(equityOf(p)):""}</td></tr>`).join("")+"</tbody>";
+    const tbody="<tbody>"+ordenado.map(p=>`<tr><td class="nowrap">${esc(p.idProjeto)}</td><td>${esc(p.nome)}${p.favorito?" ★":""}</td><td class="nowrap">${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.tipoEscopo)}</td><td>${esc(p.estruturador)}</td><td class="nowrap">${esc(editalPrevisto(p))}</td><td class="num">${isFinite(num(p.numUnidades))?fmtInt.format(num(p.numUnidades)):""}</td><td class="num">${isFinite(num(p.capex))?fmt(num(p.capex)):""}</td><td class="num">${isFinite(equityOf(p))?fmt(equityOf(p)):""}</td></tr>`).join("")+"</tbody>";
     inv=`<div class="rep-block rep-inv"><h3 class="rep-sec">Inventário do recorte (${rows.length} projetos)</h3><table>${colg}${thead}${tbody}</table></div>`;
     landscape=`<style>@page{size:A4 landscape;margin:10mm}</style>`;
   }
