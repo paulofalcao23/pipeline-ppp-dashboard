@@ -7998,7 +7998,7 @@ function download(name,content,mime){ const blob=new Blob([content],{type:mime+"
   setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 
 /* ---------- Filtros ---------- */
-const FILTERS={busca:"",uf:"",municipio:"",tipoEnte:"",regiao:"",tipoEscopo:"",estruturador:"",anoEdital:"",fase:[],favorito:""};
+const FILTERS={busca:"",uf:"",municipio:"",tipoEnte:"",regiao:"",tipoEscopo:"",estruturador:"",anoEdital:"",triEdital:"",fase:[],favorito:""};
 function uniqueVals(key){ return [...new Set(DB.projetos.map(p=>p[key]).filter(v=>v&&v!=="-"))].sort((a,b)=>a.localeCompare(b,"pt-BR")); }
 function applyFilters(){ return DB.projetos.filter(p=>{
   if(FILTERS.uf && p.uf!==FILTERS.uf) return false;
@@ -8007,7 +8007,8 @@ function applyFilters(){ return DB.projetos.filter(p=>{
   if(FILTERS.regiao && p.regiao!==FILTERS.regiao) return false;
   if(FILTERS.tipoEscopo && p.tipoEscopo!==FILTERS.tipoEscopo) return false;
   if(FILTERS.estruturador && String(p.estruturador||"").trim()!==FILTERS.estruturador) return false;
-  if(FILTERS.anoEdital){ const b=bucketEdital(p); if(!b || b.ano!==FILTERS.anoEdital) return false; }
+  if(FILTERS.anoEdital){ const b=bucketEdital(p); if(!b || b.ano!==FILTERS.anoEdital) return false;
+    if(FILTERS.triEdital && b.tri!==FILTERS.triEdital) return false; }
   if(FILTERS.fase.length && !FILTERS.fase.includes(p.fase)) return false;
   if(FILTERS.favorito==="1" && !p.favorito) return false;
   if(FILTERS.busca){ const q=FILTERS.busca.toLowerCase();
@@ -8066,7 +8067,7 @@ function renderChips(){
   if(FILTERS.regiao)       chips.push(["Região",FILTERS.regiao,()=>{FILTERS.regiao="";}]);
   if(FILTERS.tipoEscopo)   chips.push(["Escopo",FILTERS.tipoEscopo,()=>{FILTERS.tipoEscopo="";}]);
   if(FILTERS.estruturador) chips.push(["Estruturador",FILTERS.estruturador,()=>{FILTERS.estruturador="";}]);
-  if(FILTERS.anoEdital)    chips.push(["Edital em",FILTERS.anoEdital,()=>{FILTERS.anoEdital="";}]);
+  if(FILTERS.anoEdital)    chips.push(["Edital em",FILTERS.anoEdital+(FILTERS.triEdital?" · "+FILTERS.triEdital:""),()=>{FILTERS.anoEdital="";FILTERS.triEdital="";}]);
   FILTERS.fase.forEach(fz=>chips.push(["Fase",fz,()=>{FILTERS.fase=FILTERS.fase.filter(x=>x!==fz);}]));
   if(FILTERS.favorito==="1") chips.push(["","Só favoritos ★",()=>{FILTERS.favorito="";}]);
   if(!chips.length){ el.innerHTML=""; return; }
@@ -8078,7 +8079,7 @@ function renderChips(){
   if(ca) ca.onclick=()=>apply(clearAllFilters);
 }
 // Zera todos os filtros (usado no "Limpar tudo" dos chips e no botão Limpar da barra).
-function clearAllFilters(){ FILTERS.busca="";FILTERS.uf="";FILTERS.municipio="";FILTERS.tipoEnte="";FILTERS.regiao="";FILTERS.tipoEscopo="";FILTERS.estruturador="";FILTERS.anoEdital="";FILTERS.fase=[];FILTERS.favorito=""; }
+function clearAllFilters(){ FILTERS.busca="";FILTERS.uf="";FILTERS.municipio="";FILTERS.tipoEnte="";FILTERS.regiao="";FILTERS.tipoEscopo="";FILTERS.estruturador="";FILTERS.anoEdital="";FILTERS.triEdital="";FILTERS.fase=[];FILTERS.favorito=""; }
 
 /* ---------- Render: KPIs + charts ---------- */
 let CHARTS=[];
@@ -8213,7 +8214,12 @@ function renderDashboard(rows,sfx){
       options:{maintainAspectRatio:false,onHover:chartPointer,
         plugins:{legend:{position:"right",labels:{color:AXIS_TXT,boxWidth:12,font:{size:12,family:CHART_FONT}}},
           tooltip:{callbacks:{footer:items=>{const i=items[0].dataIndex; return "Total "+items[0].label+": "+datasets.reduce((s,d)=>s+d.data[i],0)+" projeto(s) · clique p/ filtrar";}}}},
-        onClick:(e,els)=>{ if(els.length) aplicarFiltro("anoEdital", anos[els[0].index], "Edital em"); },
+        onClick:(e,els)=>{ if(!els.length) return;
+          const ano=anos[els[0].index], tri=datasets[els[0].datasetIndex]?datasets[els[0].datasetIndex].label:"";
+          const igual=FILTERS.anoEdital===ano && FILTERS.triEdital===tri;   // clicar de novo no mesmo segmento limpa
+          FILTERS.anoEdital=igual?"":ano; FILTERS.triEdital=igual?"":tri;
+          resetPages(); renderFilters(); renderActive();
+          toast(igual? "Filtro removido" : ("Edital em: "+ano+" · "+tri)); },
         scales:{x:{stacked:true,ticks:{color:AXIS_TXT},grid:{display:false}},
                 y:{stacked:true,beginAtZero:true,ticks:{precision:0,color:AXIS_TXT},grid:{color:GRID}}}}}));
   }
@@ -8486,6 +8492,18 @@ function openModal(id){
     body.querySelectorAll(".modal-tab").forEach(b=>b.classList.toggle("active",b===btn));
     body.querySelectorAll(".group.tabbed").forEach(pn=>pn.classList.toggle("active",pn.dataset.panel===idx));
   }));
+  // Data exata do edital manda sobre TRI/ano: mantém os três coerentes (senão o gráfico mostra outro trimestre)
+  { const dt=body.querySelector('[data-fk="dataPublicacaoEdital"]'), tr=body.querySelector('[data-fk="triPrevisto"]'), an=body.querySelector('[data-fk="anoPrevisto"]');
+    if(dt&&tr&&an){
+      const fromDate=()=>{ const m=/^(\d{4})-(\d{2})/.exec(dt.value||""); if(!m) return;
+        tr.value=Math.ceil(+m[2]/3)+"TRI";
+        if(![...an.options].some(o=>o.value===m[1]||o.text===m[1])){ const o=document.createElement("option"); o.textContent=m[1]; an.appendChild(o); }
+        an.value=m[1]; };
+      dt.addEventListener("change",fromDate);
+      const limpaData=()=>{ if(dt.value){ dt.value=""; toast("Data exata removida: vale o trimestre/ano informado."); } };
+      tr.addEventListener("change",limpaData); an.addEventListener("change",limpaData);
+      fromDate();   // abre o projeto já coerente (a data exata prevalece)
+    } }
   // Equity acompanha o CAPEX digitado enquanto estiver no padrão
   const cx=body.querySelector('[data-fk="capex"]'), eq=body.querySelector('[data-fk="equity"]');
   if(cx && eq){ const mi=el=>{ const n=reaisToMi(el.value); return isFinite(n)? n : ""; };   // campos do formulário estão em R$
@@ -8616,7 +8634,7 @@ function resumoFiltros(){
   if(FILTERS.regiao) parts.push("Região: "+FILTERS.regiao);
   if(FILTERS.tipoEscopo) parts.push("Escopo: "+FILTERS.tipoEscopo);
   if(FILTERS.estruturador) parts.push("Estruturador: "+FILTERS.estruturador);
-  if(FILTERS.anoEdital) parts.push("Edital em: "+FILTERS.anoEdital);
+  if(FILTERS.anoEdital) parts.push("Edital em: "+FILTERS.anoEdital+(FILTERS.triEdital?" · "+FILTERS.triEdital:""));
   if(FILTERS.fase.length) parts.push("Fase: "+FILTERS.fase.join(", "));
   if(FILTERS.favorito==="1") parts.push("Só favoritos ★");
   return parts.length? "Filtros: "+parts.join(" · ") : "Base completa (sem filtros)";
