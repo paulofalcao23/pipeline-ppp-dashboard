@@ -698,7 +698,8 @@
   /* ---------- Print / PDF ---------- */
   #print-area{display:none}
   @media print{
-    @page{margin:12mm}
+    @page{margin:12mm 12mm 14mm;
+      @bottom-center{content:"CONFIDENCIAL - ASTRA"; font:600 9px Inter,Arial,sans-serif; letter-spacing:.6px; color:#5A6B7B}}
     header.app,nav.tabs,.filters,.active-chips,.save-warning,main section,.toast,.modal-bg{display:none !important}
     body{background:#fff; color: #000;}
     #print-area{display:block !important}
@@ -8751,7 +8752,7 @@ function reportHTML(rows,titulo,opts){
     ${opts.editais?`<div class="rep-block"><h3 class="rep-sec">Projetos e unidades por trimestre</h3>${tblTri}</div>`:""}
     <div class="rep-block"><h3 class="rep-sec">10 maiores projetos por CAPEX</h3>${tblTop}</div>
     ${inv}
-    <div class="rep-note">Gerado automaticamente pelo Pipeline de PPPs · ASTRA. Valores monetários em reais, com a unidade indicada em cada valor (mil, mi, bi).</div>
+    <div class="rep-note"><b>CONFIDENCIAL - ASTRA</b> · Gerado automaticamente pelo Pipeline de PPPs · ASTRA. Valores monetários em reais, com a unidade indicada em cada valor (mil, mi, bi).</div>
   </div>`;
 }
 function printReport(rows,titulo,opts){
