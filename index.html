@@ -7586,6 +7586,8 @@ function addMonths(dateStr,months){ if(!dateStr||!isFinite(months)) return "";
 const fmtNum=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
 const fmtInt=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0});
 function fmt(v){ return isFinite(v)? fmtNum.format(v):"—"; }
+// Valor em R$ milhões, na escala certa e sem o prefixo "R$": "850 mil", "150 mi", "2,55 bi". Usado nas tabelas dos relatórios.
+function fmtM(v){ return isFinite(v)? fmtMoneyMi(v).replace(/^R\$\s*/,"") : "—"; }
 // Valor em R$ milhões -> texto na escala certa: "R$ 850 mil", "R$ 150 mi", "R$ 5,31 bi".
 function fmtMoneyMi(v){
   if(!isFinite(v)) return "—";
@@ -8652,9 +8654,9 @@ function reportHTML(rows,titulo,opts){
   // Funil por fase (ordem oficial + fases fora do padrão + sem fase)
   const fases=FASES.filter(f=>rows.some(p=>p.fase===f))
     .concat([...new Set(rows.map(p=>p.fase).filter(v=>v&&!FASES.includes(v)))]);
-  const linhaFase=(rot,g)=>`<tr><td>${esc(rot)}</td><td class="num">${g.length}</td><td class="num">${fmt(sum(g,"capex"))}</td><td class="num">${fmt(sumEquity(g))}</td><td class="num">${fmt(sum(g,"valorContrato"))}</td></tr>`;
+  const linhaFase=(rot,g)=>`<tr><td>${esc(rot)}</td><td class="num">${g.length}</td><td class="num">${fmtM(sum(g,"capex"))}</td><td class="num">${fmtM(sumEquity(g))}</td><td class="num">${fmtM(sum(g,"valorContrato"))}</td></tr>`;
   const semFase=rows.filter(p=>!p.fase);
-  const tblFase=tbl([["Fase"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Valor Contrato (R$ mi)",1]],
+  const tblFase=tbl([["Fase"],["Projetos",1],["CAPEX (R$)",1],["Equity (R$)",1],["Valor Contrato (R$)",1]],
     fases.map(f=>linhaFase(f,rows.filter(p=>p.fase===f))).join("")+(semFase.length?linhaFase("(sem fase)",semFase):""));
 
   // Distribuição por UF (ordenada por CAPEX)
@@ -8662,16 +8664,16 @@ function reportHTML(rows,titulo,opts){
     .map(u=>{const g=rows.filter(p=>p.uf===u); return [u,g.length,sum(g,"capex"),sum(g,"numUnidades"),sumEquity(g)];})
     .sort((a,b)=>b[2]-a[2]||b[1]-a[1]);
   const semUf=rows.filter(p=>!p.uf).length;
-  const tblUf=tbl([["UF"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Unidades",1]],
-    ufs.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmt(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
+  const tblUf=tbl([["UF"],["Projetos",1],["CAPEX (R$)",1],["Equity (R$)",1],["Unidades",1]],
+    ufs.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmtM(x[2])}</td><td class="num">${fmtM(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
     +(semUf?`<tr><td>(sem UF)</td><td class="num">${semUf}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`:""));
 
   // Distribuição por Tipo de Escopo (Brownfield / Greenfield / Brown & Green + valores fora da lista)
   const escOrder=TIPO_ESCOPO.concat([...new Set(rows.map(p=>p.tipoEscopo).filter(v=>v&&!TIPO_ESCOPO.includes(v)))]);
   const escLinhas=escOrder.map(e=>{const g=rows.filter(p=>p.tipoEscopo===e); return [e,g.length,sum(g,"capex"),sum(g,"numUnidades"),sumEquity(g)];}).filter(x=>x[1]>0);
   const semEsc=rows.filter(p=>!p.tipoEscopo).length;
-  const tblEsc=tbl([["Tipo de Escopo"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Unidades",1]],
-    escLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmt(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
+  const tblEsc=tbl([["Tipo de Escopo"],["Projetos",1],["CAPEX (R$)",1],["Equity (R$)",1],["Unidades",1]],
+    escLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmtM(x[2])}</td><td class="num">${fmtM(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
     +(semEsc?`<tr><td>(não informado)</td><td class="num">${semEsc}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`:""));
 
   // Distribuição por Estruturador (ordenada por nº de projetos)
@@ -8679,8 +8681,8 @@ function reportHTML(rows,titulo,opts){
   rows.forEach(p=>{ const e=String(p.estruturador||"").trim(); if(e){ (estrMap[e]=estrMap[e]||[]).push(p); } });
   const estrLinhas=Object.entries(estrMap).map(([e,g])=>[e,g.length,sum(g,"capex"),sum(g,"numUnidades"),sumEquity(g)]).sort((a,b)=>b[1]-a[1]||b[2]-a[2]);
   const semEstr=rows.filter(p=>!String(p.estruturador||"").trim()).length;
-  const tblEstr=tbl([["Estruturador"],["Projetos",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1],["Unidades",1]],
-    estrLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmt(x[2])}</td><td class="num">${fmt(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
+  const tblEstr=tbl([["Estruturador"],["Projetos",1],["CAPEX (R$)",1],["Equity (R$)",1],["Unidades",1]],
+    estrLinhas.map(x=>`<tr><td>${esc(x[0])}</td><td class="num">${x[1]}</td><td class="num">${fmtM(x[2])}</td><td class="num">${fmtM(x[4])}</td><td class="num">${fmtInt.format(x[3])}</td></tr>`).join("")
     +(semEstr?`<tr><td>(não informado)</td><td class="num">${semEstr}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`:""));
 
   // Editais previstos por Ano / Trimestre (contagem de projetos; só nos relatórios que pedem)
@@ -8695,9 +8697,9 @@ function reportHTML(rows,titulo,opts){
     const colsT=TRI.concat(["s/ TRI"]);
     const cel=g=>g&&g.length? String(g.length) : "";
     const linhas=anos.map(a=>{ const todos=colsT.reduce((acc,t)=>acc.concat(mapa[a][t]||[]),[]);
-      return `<tr><td>${esc(a)}</td>${colsT.map(t=>`<td class="num">${cel(mapa[a][t])}</td>`).join("")}<td class="num"><b>${todos.length}</b></td><td class="num">${fmtInt.format(sum(todos,"numUnidades"))}</td><td class="num">${fmt(sum(todos,"capex"))}</td><td class="num">${fmt(sumEquity(todos))}</td></tr>`; }).join("");
-    const semLinha=semPrev.length? `<tr><td>Sem previsão</td><td class="num" colspan="5"></td><td class="num"><b>${semPrev.length}</b></td><td class="num">${fmtInt.format(sum(semPrev,"numUnidades"))}</td><td class="num">${fmt(sum(semPrev,"capex"))}</td><td class="num">${fmt(sumEquity(semPrev))}</td></tr>` : "";
-    const totLinha=`<tr><td><b>Total</b></td><td class="num" colspan="5"></td><td class="num"><b>${rows.length}</b></td><td class="num"><b>${fmtInt.format(sum(rows,"numUnidades"))}</b></td><td class="num"><b>${fmt(sum(rows,"capex"))}</b></td><td class="num"><b>${fmt(sumEquity(rows))}</b></td></tr>`;
+      return `<tr><td>${esc(a)}</td>${colsT.map(t=>`<td class="num">${cel(mapa[a][t])}</td>`).join("")}<td class="num"><b>${todos.length}</b></td><td class="num">${fmtInt.format(sum(todos,"numUnidades"))}</td><td class="num">${fmtM(sum(todos,"capex"))}</td><td class="num">${fmtM(sumEquity(todos))}</td></tr>`; }).join("");
+    const semLinha=semPrev.length? `<tr><td>Sem previsão</td><td class="num" colspan="5"></td><td class="num"><b>${semPrev.length}</b></td><td class="num">${fmtInt.format(sum(semPrev,"numUnidades"))}</td><td class="num">${fmtM(sum(semPrev,"capex"))}</td><td class="num">${fmtM(sumEquity(semPrev))}</td></tr>` : "";
+    const totLinha=`<tr><td><b>Total</b></td><td class="num" colspan="5"></td><td class="num"><b>${rows.length}</b></td><td class="num"><b>${fmtInt.format(sum(rows,"numUnidades"))}</b></td><td class="num"><b>${fmtM(sum(rows,"capex"))}</b></td><td class="num"><b>${fmtM(sumEquity(rows))}</b></td></tr>`;
     // Segunda tabela: um trimestre por linha (ano/TRI), com projetos e unidades
     const ordTri=t=>{ const i=TRI.indexOf(t); return i<0? 9 : i; };
     const triLinhas=[];
@@ -8706,13 +8708,13 @@ function reportHTML(rows,titulo,opts){
     if(semPrev.length) triLinhas.push(`<tr><td>Sem previsão</td><td class="num">${semPrev.length}</td><td class="num">${fmtInt.format(sum(semPrev,"numUnidades"))}</td></tr>`);
     triLinhas.push(`<tr><td><b>Total</b></td><td class="num"><b>${rows.length}</b></td><td class="num"><b>${fmtInt.format(sum(rows,"numUnidades"))}</b></td></tr>`);
     tblTri=tbl([["Trimestre"],["Projetos",1],["Unidades",1]], triLinhas.join(""));
-    tblEd=tbl([["Ano"],["1º TRI",1],["2º TRI",1],["3º TRI",1],["4º TRI",1],["Sem TRI",1],["Projetos",1],["Unidades",1],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1]], linhas+semLinha+totLinha);
+    tblEd=tbl([["Ano"],["1º TRI",1],["2º TRI",1],["3º TRI",1],["4º TRI",1],["Sem TRI",1],["Projetos",1],["Unidades",1],["CAPEX (R$)",1],["Equity (R$)",1]], linhas+semLinha+totLinha);
   }
 
   // Top 10 por CAPEX
   const top=[...rows].filter(p=>num(p.capex)>0).sort((a,b)=>num(b.capex)-num(a.capex)).slice(0,10);
-  const tblTop=top.length? tbl([["ID"],["Projeto"],["UF"],["Fase"],["Estruturador"],["Edital previsto"],["CAPEX (R$ mi)",1],["Equity (R$ mi)",1]],
-    top.map(p=>`<tr><td>${esc(p.idProjeto)}</td><td>${esc(p.nome)}</td><td>${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.estruturador)}</td><td>${esc(editalPrevisto(p))}</td><td class="num">${fmt(num(p.capex))}</td><td class="num">${fmt(equityOf(p))}</td></tr>`).join(""))
+  const tblTop=top.length? tbl([["ID"],["Projeto"],["UF"],["Fase"],["Estruturador"],["Edital previsto"],["CAPEX (R$)",1],["Equity (R$)",1]],
+    top.map(p=>`<tr><td>${esc(p.idProjeto)}</td><td>${esc(p.nome)}</td><td>${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.estruturador)}</td><td>${esc(editalPrevisto(p))}</td><td class="num">${fmtM(num(p.capex))}</td><td class="num">${fmtM(equityOf(p))}</td></tr>`).join(""))
     : `<p style="font-size:11px;color:#5A6B7B">Nenhum projeto com CAPEX informado neste recorte.</p>`;
 
   // Inventário completo do recorte (opcional). Tabela larga -> impressa em paisagem
@@ -8720,10 +8722,10 @@ function reportHTML(rows,titulo,opts){
   let inv="", landscape="";
   if(opts.inventario){
     const ordenado=[...rows].sort((a,b)=>String(a.idProjeto).localeCompare(String(b.idProjeto),"pt-BR",{numeric:true}));
-    const cols=[["ID","7%"],["Projeto","20%"],["UF","5%"],["Fase","18%"],["Escopo","9%"],["Estruturador","12%"],["Edital previsto","8%"],["Unidades","6%",1],["CAPEX (R$ mi)","7.5%",1],["Equity (R$ mi)","7.5%",1]];
+    const cols=[["ID","7%"],["Projeto","20%"],["UF","5%"],["Fase","18%"],["Escopo","9%"],["Estruturador","12%"],["Edital previsto","8%"],["Unidades","6%",1],["CAPEX (R$)","7.5%",1],["Equity (R$)","7.5%",1]];
     const colg="<colgroup>"+cols.map(c=>`<col style="width:${c[1]}">`).join("")+"</colgroup>";
     const thead="<thead><tr>"+cols.map(c=>`<th${c[2]?' class="num"':""}>${c[0]}</th>`).join("")+"</tr></thead>";
-    const tbody="<tbody>"+ordenado.map(p=>`<tr><td class="nowrap">${esc(p.idProjeto)}</td><td>${esc(p.nome)}${p.favorito?" ★":""}</td><td class="nowrap">${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.tipoEscopo)}</td><td>${esc(p.estruturador)}</td><td class="nowrap">${esc(editalPrevisto(p))}</td><td class="num">${isFinite(num(p.numUnidades))?fmtInt.format(num(p.numUnidades)):""}</td><td class="num">${isFinite(num(p.capex))?fmt(num(p.capex)):""}</td><td class="num">${isFinite(equityOf(p))?fmt(equityOf(p)):""}</td></tr>`).join("")+"</tbody>";
+    const tbody="<tbody>"+ordenado.map(p=>`<tr><td class="nowrap">${esc(p.idProjeto)}</td><td>${esc(p.nome)}${p.favorito?" ★":""}</td><td class="nowrap">${esc(UF_NAME2ABBR[p.uf]||p.uf||"")}</td><td>${esc(p.fase)}</td><td>${esc(p.tipoEscopo)}</td><td>${esc(p.estruturador)}</td><td class="nowrap">${esc(editalPrevisto(p))}</td><td class="num">${isFinite(num(p.numUnidades))?fmtInt.format(num(p.numUnidades)):""}</td><td class="num">${isFinite(num(p.capex))?fmtM(num(p.capex)):""}</td><td class="num">${isFinite(equityOf(p))?fmtM(equityOf(p)):""}</td></tr>`).join("")+"</tbody>";
     inv=`<div class="rep-block rep-inv"><h3 class="rep-sec">Inventário do recorte (${rows.length} projetos)</h3><table>${colg}${thead}${tbody}</table></div>`;
     landscape=`<style>@page{size:A4 landscape;margin:10mm}</style>`;
   }
@@ -8749,7 +8751,7 @@ function reportHTML(rows,titulo,opts){
     ${opts.editais?`<div class="rep-block"><h3 class="rep-sec">Projetos e unidades por trimestre</h3>${tblTri}</div>`:""}
     <div class="rep-block"><h3 class="rep-sec">10 maiores projetos por CAPEX</h3>${tblTop}</div>
     ${inv}
-    <div class="rep-note">Gerado automaticamente pelo Pipeline de PPPs · ASTRA. Valores monetários em R$ milhões; fonte: planilha PIPELINE.</div>
+    <div class="rep-note">Gerado automaticamente pelo Pipeline de PPPs · ASTRA. Valores monetários em reais, com a unidade indicada em cada valor (mil, mi, bi).</div>
   </div>`;
 }
 function printReport(rows,titulo,opts){
