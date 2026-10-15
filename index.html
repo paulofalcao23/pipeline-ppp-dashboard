@@ -384,6 +384,17 @@
   .ms-actions button:hover { color: var(--txt); border-color: var(--astra-lime); }
 
   /* ---------- Cards / KPIs ---------- */
+  .etapa-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .etapa-card { display: flex; flex-direction: column; gap: 4px; text-align: left; cursor: pointer; font: inherit;
+    background: var(--card); color: var(--txt); border: 1px solid var(--border); border-top: 3px solid var(--astra-lime);
+    border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+  .etapa-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+  .etapa-card.saida { border-top-color: #FF5C5C; }
+  .etapa-card.ganho { border-top-color: #20CC92; }
+  .etapa-card.ativo { outline: 2px solid var(--astra-lime); }
+  .etapa-card .ec-l { font-family: var(--font-heading); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt-2); font-weight: 700; }
+  .etapa-card .ec-n { font-family: var(--font-heading); font-size: 28px; font-weight: 800; line-height: 1.1; }
+  .etapa-card .ec-s { font-size: 12px; color: var(--txt-2); }
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .kpi {
     position: relative;
@@ -808,7 +819,7 @@
 
 <nav class="tabs">
   <button data-tab="dashboard" class="active"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span>Dashboard</span></button>
-  <button data-tab="prioritarios"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>Favoritos ASTRA</span></button>
+  <button data-tab="prioritarios"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>Funil ASTRA</span></button>
   <button data-tab="projetos"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span>Projetos</span></button>
   <button data-tab="relatorios"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Relatórios</span></button>
   <button data-tab="configuracoes"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Configurações</span></button>
@@ -830,7 +841,8 @@
   </section>
 
   <section id="tab-prioritarios" style="display:none">
-    <div class="hint">Dashboard somente dos projetos marcados como <b>★ Favorito</b> (caixa de seleção na 1ª coluna da aba Projetos). Os filtros acima também se aplicam.</div>
+    <div class="hint">Funil de decisão da ASTRA: projetos que saíram do <b>Radar</b> (de <b>Favorito</b> em diante). Clique num cartão de etapa para filtrar. Para favoritar, use a caixa de seleção na 1ª coluna da aba Projetos. Os filtros acima também se aplicam.</div>
+    <div class="etapa-cards" id="etapacardsprio"></div>
     <div class="kpis" id="kpisprio"></div>
     <div class="grid-charts" id="chartsprio"></div>
     <div class="table-tools" style="margin-top:24px">
@@ -840,8 +852,8 @@
           <select id="page-sizeprio" class="sm" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border); background:var(--card-2); color:var(--txt); margin-left: 6px;">
             <option>10</option><option selected>20</option><option>30</option><option>50</option><option value="999999">Todos</option>
           </select></label>
-        <button class="btn sm secondary" id="btn-pdf-filtradosprio">🖨 PDF dos favoritos</button>
-        <button class="btn sm secondary" id="btn-csv-quickprio">CSV dos favoritos</button>
+        <button class="btn sm secondary" id="btn-pdf-filtradosprio">🖨 PDF do funil</button>
+        <button class="btn sm secondary" id="btn-csv-quickprio">CSV do funil</button>
       </div>
     </div>
     <div class="table-scroll">
@@ -914,8 +926,8 @@
           <button class="btn ghost-dark" id="rep-exec-all">Tudo (<span id="cnt-rep-all">0</span>)</button></div>
       </div>
       <div class="panel">
-        <h3>Relatório de Favoritos ★</h3>
-        <p>Visão executiva dos projetos acompanhados pela ASTRA, com a tabela de editais previstos por ano/trimestre e a <strong>lista de todos os favoritos</strong> — ideal para a reunião semanal de pipeline.</p>
+        <h3>Relatório do Funil ASTRA</h3>
+        <p>Visão executiva dos projetos acompanhados pela ASTRA, com a tabela de editais previstos por ano/trimestre e a <strong>lista de todos os projetos do funil</strong> — ideal para a reunião semanal de pipeline.</p>
         <button class="btn primary" id="rep-fav" style="align-self:flex-start">Gerar (<span id="cnt-rep-fav">0</span>)</button>
       </div>
       <div class="panel">
@@ -7508,6 +7520,8 @@ const ANOS_PREV = [0,1,2].map(i=>String(ANO_ATUAL+i));
 
 /* ---------- Metadados de campos (form + tabela + export + ficha) ---------- */
 // type (t): text | num | date | select | textarea | bool
+const ETAPAS = ["Radar","Favorito","Análise interna","Go / No Go","Proposta","Ganho","No Go","Perdido"];   // funil ASTRA
+const ETAPAS_SAIDA = ["No Go","Perdido"];   // saem do funil e exigem motivo
 const GARANTIAS = ["03 Contraprestações","FUNDEB","QESE, QSE","FPM","FPE","Outros"];
 const GARANTIA_SEP = "; ";
 const FIELDS = [
@@ -7515,6 +7529,8 @@ const FIELDS = [
    {k:"idProjeto",l:"ID Projeto",t:"text",hint:"Identificador da planilha, ex.: PPP-001."},
    {k:"nome",l:"Nome do Projeto",t:"text",req:true,wide:true},
    {k:"fase",l:"Fase do Projeto",t:"select",opts:FASES},
+   {k:"etapaAstra",l:"Etapa ASTRA (funil)",t:"select",opts:ETAPAS,hint:"Radar → Favorito → Análise interna → Go / No Go → Proposta → Ganho. Saídas: No Go e Perdido."},
+   {k:"motivoEncerramento",l:"Motivo (No Go / Perdido)",t:"text",hint:"Obrigatório quando a etapa é No Go ou Perdido."},
    {k:"estruturador",l:"Estruturador",t:"text",hint:"Quem estrutura o projeto (ex.: BNDES, IFC, consultoria)."},
    {k:"triPrevisto",l:"Trimestre Previsto do Edital",t:"select",opts:TRIS,hint:"Prazo aproximado — dois cliques (TRI + ano) e pronto."},
    {k:"anoPrevisto",l:"Ano Previsto do Edital",t:"select",opts:ANOS_PREV},
@@ -7660,6 +7676,7 @@ const SB_COLS = {
   linkDocumentos:"link_documentos", valorFinalContrato:"valor_final_contrato", vencedor:"vencedor",
   desagio:"desagio", favorito:"favorito", dataPublicacaoEdital:"data_publicacao_edital",
   triPrevisto:"tri_previsto", anoPrevisto:"ano_previsto",
+  etapaAstra:"etapa_astra", motivoEncerramento:"motivo_encerramento", etapaData:"etapa_data",
 };
 const SB_NUM = new Set(["equity","num_unidades","num_vagas","num_salas","area_total","prazo_concessao","capex",
   "opex_ano","contraprestacao_mensal","contraprestacao_anual","valor_contrato","valor_aporte",
@@ -7667,13 +7684,15 @@ const SB_NUM = new Set(["equity","num_unidades","num_vagas","num_salas","area_to
 function toRow(p){ const r={}; for(const k in SB_COLS){ const col=SB_COLS[k]; let v=p[k];
   if(col==="favorito") v=!!v;
   else if(SB_NUM.has(col)) v=(v===""||v==null||(typeof v==="number"&&isNaN(v)))?null:Number(v);
-  else if(col==="data_publicacao_edital") v=(v==="")?null:(v||null);
+  else if(col==="data_publicacao_edital"||col==="etapa_data") v=(v==="")?null:(v||null);
+  else if(col==="etapa_astra") v=v||"Radar";
   else v=(v==null)?"":String(v);
   r[col]=v; } return r; }
 function fromRow(r){ const p={id:uid()}; for(const k in SB_COLS){ const col=SB_COLS[k]; let v=r[col];
   if(col==="favorito") v=!!v;
   else if(SB_NUM.has(col)) v=(v==null)?"":v;
   else v=(v==null)?"":String(v);
+  if(col==="etapa_astra" && !v) v=r.favorito?"Favorito":"Radar";
   p[k]=v; } return p; }
 
 async function sbLoad(){ const {data,error}=await sb.from("projetos").select("*");
@@ -8001,7 +8020,7 @@ function download(name,content,mime){ const blob=new Blob([content],{type:mime+"
   setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 
 /* ---------- Filtros ---------- */
-const FILTERS={busca:"",uf:"",municipio:"",tipoEnte:"",regiao:"",tipoEscopo:"",estruturador:"",anoEdital:"",triEdital:"",fase:[],favorito:""};
+const FILTERS={busca:"",uf:"",municipio:"",tipoEnte:"",regiao:"",tipoEscopo:"",estruturador:"",anoEdital:"",triEdital:"",etapa:"",fase:[],favorito:""};
 function uniqueVals(key){ return [...new Set(DB.projetos.map(p=>p[key]).filter(v=>v&&v!=="-"))].sort((a,b)=>a.localeCompare(b,"pt-BR")); }
 function applyFilters(){ return DB.projetos.filter(p=>{
   if(FILTERS.uf && p.uf!==FILTERS.uf) return false;
@@ -8012,6 +8031,7 @@ function applyFilters(){ return DB.projetos.filter(p=>{
   if(FILTERS.estruturador && String(p.estruturador||"").trim()!==FILTERS.estruturador) return false;
   if(FILTERS.anoEdital){ const b=bucketEdital(p); if(!b || b.ano!==FILTERS.anoEdital) return false;
     if(FILTERS.triEdital && b.tri!==FILTERS.triEdital) return false; }
+  if(FILTERS.etapa && etapaOf(p)!==FILTERS.etapa) return false;
   if(FILTERS.fase.length && !FILTERS.fase.includes(p.fase)) return false;
   if(FILTERS.favorito==="1" && !p.favorito) return false;
   if(FILTERS.busca){ const q=FILTERS.busca.toLowerCase();
@@ -8039,6 +8059,7 @@ function renderFilters(){
     sel("f-reg","Região","regiao",uniqueVals("regiao"))+
     sel("f-escopo","Tipo de Escopo","tipoEscopo",uniqueVals("tipoEscopo"))+
     sel("f-estr","Estruturador","estruturador",uniqueVals("estruturador"))+
+    sel("f-etapa","Etapa ASTRA","etapa",ETAPAS)+
     faseMS+
     `<div class="field"><label for="f-fav">Favorito</label><select data-fk="favorito" id="f-fav"><option value="">Todos</option><option value="1" ${FILTERS.favorito==="1"?"selected":""}>Só favoritos ★</option></select></div>`+
     `<div class="field"><label>&nbsp;</label><button class="btn sm ghost-dark" id="f-clear">Limpar</button></div>`;
@@ -8070,7 +8091,8 @@ function renderChips(){
   if(FILTERS.regiao)       chips.push(["Região",FILTERS.regiao,()=>{FILTERS.regiao="";}]);
   if(FILTERS.tipoEscopo)   chips.push(["Escopo",FILTERS.tipoEscopo,()=>{FILTERS.tipoEscopo="";}]);
   if(FILTERS.estruturador) chips.push(["Estruturador",FILTERS.estruturador,()=>{FILTERS.estruturador="";}]);
-  if(FILTERS.anoEdital)    chips.push(["Edital em",FILTERS.anoEdital+(FILTERS.triEdital?" · "+FILTERS.triEdital:""),()=>{FILTERS.anoEdital="";FILTERS.triEdital="";}]);
+  if(FILTERS.etapa)        chips.push(["Etapa ASTRA",FILTERS.etapa,()=>{FILTERS.etapa="";}]);
+  if(FILTERS.anoEdital)    chips.push(["Edital em",FILTERS.anoEdital+(FILTERS.triEdital?" · "+FILTERS.triEdital:""),()=>{FILTERS.anoEdital="";FILTERS.triEdital="";FILTERS.etapa="";}]);
   FILTERS.fase.forEach(fz=>chips.push(["Fase",fz,()=>{FILTERS.fase=FILTERS.fase.filter(x=>x!==fz);}]));
   if(FILTERS.favorito==="1") chips.push(["","Só favoritos ★",()=>{FILTERS.favorito="";}]);
   if(!chips.length){ el.innerHTML=""; return; }
@@ -8118,13 +8140,30 @@ function fitKpiValues(root){
     while(v.scrollWidth>v.clientWidth+1 && fs>12){ fs-=1; v.style.fontSize=fs+"px"; } });
 }
 window.addEventListener("resize",()=>{ ["kpis","kpisprio"].forEach(id=>fitKpiValues(document.getElementById(id))); });
+// Cartões do funil (aba Funil ASTRA): um por etapa, respeitando os filtros (menos o da própria etapa)
+function renderEtapaCards(){
+  const box=document.getElementById("etapacardsprio"); if(!box) return;
+  const sv=FILTERS.etapa; FILTERS.etapa=""; const base=applyFilters().filter(emFunil); FILTERS.etapa=sv;
+  const etapas=ETAPAS.filter(e=>e!=="Radar");
+  box.innerHTML=etapas.map(e=>{
+    const g=base.filter(p=>etapaOf(p)===e);
+    const dias=g.map(diasEtapa).filter(isFinite);
+    const media=dias.length? Math.round(dias.reduce((a,b)=>a+b,0)/dias.length) : null;
+    const cls=ETAPAS_SAIDA.includes(e)? " saida" : (e==="Ganho"? " ganho":"");
+    return `<button type="button" class="etapa-card${cls}${FILTERS.etapa===e?" ativo":""}" data-etapa="${esc(e)}">
+      <span class="ec-l">${esc(e)}</span><span class="ec-n">${fmtInt.format(g.length)}</span>
+      <span class="ec-s">CAPEX ${esc(fmtMoneyMi(sum(g,"capex")))}</span>
+      <span class="ec-s">Equity ${esc(fmtMoneyMi(sumEquity(g)))}</span>
+      <span class="ec-s">${fmtInt.format(sum(g,"numUnidades"))} unid.${media!==null?" · "+media+" d na etapa":""}</span></button>`; }).join("");
+  box.querySelectorAll(".etapa-card").forEach(b=>b.onclick=()=>aplicarFiltro("etapa", b.dataset.etapa, "Etapa ASTRA"));
+}
 function renderDashboard(rows,sfx){
   sfx=sfx||"";
   const k=document.getElementById("kpis"+sfx);
   const capex=sum(rows,"capex"), equity=sumEquity(rows), contrAno=rows.reduce((s,p)=>s+contrAnoOf(p),0);
   const unidades=sum(rows,"numUnidades"), vagas=sum(rows,"numVagas");
   const contratos=rows.filter(p=>p.fase==="Contrato Iniciado"||p.fase==="Licitação Encerrada").length;
-  const universe = sfx==="prio" ? DB.projetos.filter(p=>p.favorito) : DB.projetos;
+  const universe = sfx==="prio" ? DB.projetos.filter(emFunil) : DB.projetos;
   const ativosBase = universe.filter(p=>p.fase && !FASES_TERM.includes(p.fase)).length;
   const filtroAtivo = rows.length!==universe.length;
   const projVal = filtroAtivo ? rows.length : universe.length;
@@ -8136,11 +8175,15 @@ function renderDashboard(rows,sfx){
     kpi("Equity",fmtMoneyMi(equity),"Soma do Equity dos projetos filtrados",false,KPI_ICONS.pie)+
     kpi("Contraprestação",fmtMoneyMi(contrAno)+"/ano",fmtMoneyMi(contrAno/12)+"/mês",false,KPI_ICONS.repeat)+
     kpi("Infraestrutura",fmtInt.format(unidades)+" Unidades",fmtInt.format(vagas)+" Vagas previstas",false,KPI_ICONS.building)+
-    kpi("★ Favoritos",fmtInt.format(rows.filter(p=>p.favorito).length),"Acompanhados pela ASTRA",false,KPI_ICONS.star);
+    (sfx==="prio"
+      ? kpi("Ganhos",fmtInt.format(rows.filter(p=>etapaOf(p)==="Ganho").length),"Projetos na etapa Ganho",false,KPI_ICONS.star)
+      : kpi("★ Favoritos",fmtInt.format(rows.filter(p=>p.favorito).length),"Acompanhados pela ASTRA",false,KPI_ICONS.star));
+  if(sfx==="prio") renderEtapaCards();
   fitKpiValues(k);
 
   const c=document.getElementById("charts"+sfx);
   c.innerHTML=`
+    ${sfx==="prio"?`<div class="panel wide"><h3>Funil ASTRA</h3><div class="chart-wrap"><canvas id="ch-etapa${sfx}"></canvas></div></div>`:""}
     <div class="panel wide"><h3>Estágio Atual dos Projetos</h3><div class="chart-wrap"><canvas id="ch-funil${sfx}"></canvas></div></div>
     <div class="panel"><h3>Por Tipo de Ente</h3><div class="chart-wrap"><canvas id="ch-tipo${sfx}"></canvas></div></div>
     <div class="panel"><h3>Por Região</h3><div class="chart-wrap"><canvas id="ch-regiao${sfx}"></canvas></div></div>
@@ -8157,6 +8200,24 @@ function renderDashboard(rows,sfx){
   if(rows.length===0){ c.innerHTML="<div class='panel wide'><div class='empty'>Nenhum projeto atende a estes critérios.</div></div>"; return; }
 
   renderBrazilMap("map-br"+sfx,rows);
+
+  // Funil ASTRA: projetos por etapa (clique filtra); tooltip traz CAPEX, Equity e passagem da etapa anterior
+  if(sfx==="prio"){
+    const grp=ETAPAS.map(e=>rows.filter(p=>etapaOf(p)===e));
+    const cnt=grp.map(g=>g.length);
+    const cor=ETAPAS.map(e=>ETAPAS_SAIDA.includes(e)? DANGER_HEX : (e==="Ganho"?"#20CC92":LIME));
+    CHARTS.push(new Chart(byId("ch-etapa"+sfx),{type:"bar",
+      data:{labels:ETAPAS.map((e,i)=>e+" ("+cnt[i]+")"),datasets:[{label:"Projetos",data:cnt,backgroundColor:cor,borderRadius:4}]},
+      options:{indexAxis:"y",maintainAspectRatio:false,onHover:chartPointer,
+        plugins:{legend:{display:false},tooltip:{callbacks:{
+          title:items=>ETAPAS[items[0].dataIndex],
+          afterBody:items=>{ const i=items[0].dataIndex, g=grp[i];
+            const lin=["CAPEX: "+fmtMoneyMi(sum(g,"capex")),"Equity: "+fmtMoneyMi(sumEquity(g))];
+            if(i>0 && i<=5 && cnt[i-1]>0) lin.push("Passagem da etapa anterior: "+Math.round(cnt[i]/cnt[i-1]*100)+"%");
+            lin.push("clique para filtrar"); return lin; }}}},
+        onClick:(e,els)=>{ if(els.length) aplicarFiltro("etapa", ETAPAS[els[0].index], "Etapa ASTRA"); },
+        scales:{x:{beginAtZero:true,ticks:{precision:0,color:AXIS_TXT},grid:{color:GRID}}, y:{ticks:{color:AXIS_TXT},grid:{display:false}}}}}));
+  }
 
   const fasePresentes=FASES.filter(f=>rows.some(p=>p.fase===f));
   const faseExtras=[...new Set(rows.map(p=>p.fase).filter(v=>v&&!FASES.includes(v)))];
@@ -8356,7 +8417,7 @@ let sortKey="idProjeto", sortDir=1;
 const PGS={};
 function pg(sfx){ return PGS[sfx]||(PGS[sfx]={page:1,size:20}); }
 function resetPages(){ Object.values(PGS).forEach(s=>s.page=1); }
-const TABLE_COLS=["favorito","idProjeto","nome","fase","estruturador","tipoEscopo","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","equity","contraprestacaoMensal","contraprestacaoAnual"];
+const TABLE_COLS=["favorito","idProjeto","nome","etapaAstra","diasEtapa","fase","estruturador","tipoEscopo","editalPrevisto","tipoEnte","uf","municipios","regiao","numUnidades","capex","equity","contraprestacaoMensal","contraprestacaoAnual"];
 const EQUITY_PCT=0.30;   // Padrão: Equity = 30% do CAPEX quando o projeto não tem valor próprio (troque aqui o percentual)
 // Contraprestação: mensal e anual andam juntas (anual = mensal × 12). Editou um, o outro é recalculado.
 function syncContrap(p,key){
@@ -8377,11 +8438,11 @@ function equityOf(p){
   const own=num(p.equity); if(p.equity!=="" && p.equity!=null && isFinite(own)) return own;   // ajuste pontual do projeto
   const n=num(p.capex); return isFinite(n)? Math.round(n*EQUITY_PCT*1e6)/1e6 : NaN; }
 // Rótulos de colunas da tabela que não são campos diretos (calculadas).
-const COL_LABELS={editalPrevisto:"Edital previsto",tipoEscopo:"Tipo",equity:"Equity (R$ mi)",contraprestacaoMensal:"Contrapr. mensal (R$ mi)",contraprestacaoAnual:"Contrapr. anual (R$ mi)"};
+const COL_LABELS={etapaAstra:"Etapa ASTRA",diasEtapa:"Dias na etapa",editalPrevisto:"Edital previsto",tipoEscopo:"Tipo",equity:"Equity (R$ mi)",contraprestacaoMensal:"Contrapr. mensal (R$ mi)",contraprestacaoAnual:"Contrapr. anual (R$ mi)"};
 let TBL_ROWS=[], TBL_SFX="";
 // Colunas editáveis direto na grade (clique na célula, digite, Enter grava e desce para a linha de baixo).
 const MONEY_GRID=new Set(["capex","valorContrato","contraprestacaoMensal","contraprestacaoAnual"]);   // colunas de valor da grade (R$ mi)
-const INLINE_KEYS=new Set(["capex","equity","contraprestacaoMensal","contraprestacaoAnual","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
+const INLINE_KEYS=new Set(["etapaAstra","capex","equity","contraprestacaoMensal","contraprestacaoAnual","valorContrato","numUnidades","vencedor","estruturador","tipoEscopo","uf","municipios","regiao","tipoEnte","fase"]);
 function renderTable(rows,sfx){
   sfx=sfx||""; TBL_ROWS=rows; TBL_SFX=sfx;
   const st=pg(sfx);
@@ -8392,7 +8453,7 @@ function renderTable(rows,sfx){
   // Só compara como número quando AMBOS os valores são numéricos puros (sem letras).
   // Evita que IDs tipo "PPP-001" sejam lidos como -1 (o hífen virava sinal negativo).
   const isNumStr=v=>{ const s=String(v==null?"":v).trim(); return s!=="" && /^-?[\d.,\s]*\d[\d.,\s]*$/.test(s); };
-  const getSort=(p)=> sortKey==="editalPrevisto" ? editalPrevisto(p) : (sortKey==="equity" ? equityOf(p) : p[sortKey]);
+  const getSort=(p)=> sortKey==="editalPrevisto" ? editalPrevisto(p) : (sortKey==="equity" ? equityOf(p) : (sortKey==="diasEtapa" ? diasEtapa(p) : p[sortKey]));
   const sorted=[...rows].sort((a,b)=>{ let x=getSort(a),y=getSort(b);
     if(isNumStr(x)&&isNumStr(y)){ const nx=num(x),ny=num(y); if(isFinite(nx)&&isFinite(ny)) return (nx-ny)*sortDir; }
     return String(x==null?"":x).localeCompare(String(y==null?"":y),"pt-BR",{numeric:true})*sortDir; });
@@ -8403,6 +8464,8 @@ function renderTable(rows,sfx){
   else tbody.innerHTML=pageRows.map(p=>{
     const cell=k=>{
       if(k==="favorito") return `<input type="checkbox" data-fav="${p.id}" ${p.favorito?"checked":""} ${READ_ONLY?"disabled":""} title="Favorito ASTRA" style="width:18px;height:18px;cursor:pointer;accent-color:var(--astra-lime-dk)">`;
+      if(k==="etapaAstra") return etapaTag(etapaOf(p));
+      if(k==="diasEtapa"){ const n=diasEtapa(p); return isFinite(n)? String(n) : ""; }
       if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
         return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
       if(MONEY_GRID.has(k)){const n=num(p[k]);return isFinite(n)?fmt(n):"";}
@@ -8456,8 +8519,27 @@ function renderPager(total,pages,sfx){
   if(prev) prev.onclick=()=>{ st.page--; renderTable(TBL_ROWS,sfx); document.querySelector("#tbl"+sfx).scrollIntoView({block:"start", behavior:"smooth"}); };
   if(next) next.onclick=()=>{ st.page++; renderTable(TBL_ROWS,sfx); document.querySelector("#tbl"+sfx).scrollIntoView({block:"start", behavior:"smooth"}); };
 }
+/* ---------- Funil ASTRA ---------- */
+function emFunil(p){ return etapaOf(p)!=="Radar"; }   // projetos que a ASTRA já tirou do Radar
+function diasEtapa(p){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(p.etapaData||"")); if(!m) return NaN;
+  const d=new Date(+m[1],+m[2]-1,+m[3]), h=new Date(); h.setHours(0,0,0,0); return Math.max(0,Math.round((h-d)/86400000)); }
+function etapaOf(p){ return p.etapaAstra || (p.favorito?"Favorito":"Radar"); }
+function hojeISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+// Move o projeto de etapa (registra a data) e mantém a estrela de favorito coerente.
+function setEtapa(p,nova,motivo){
+  p.etapaAstra=nova; p.etapaData=hojeISO();
+  if(ETAPAS_SAIDA.includes(nova)){ if(motivo!==undefined) p.motivoEncerramento=motivo; }
+  else p.motivoEncerramento="";
+  if(nova==="Favorito") p.favorito=true; else if(nova==="Radar") p.favorito=false;
+}
+// A estrela mudou: Radar <-> Favorito acompanham (etapas à frente não são mexidas).
+function favoritoMudou(p){
+  const e=etapaOf(p);
+  if(p.favorito && e==="Radar") setEtapa(p,"Favorito");
+  else if(!p.favorito && e==="Favorito") setEtapa(p,"Radar");
+}
 function toggleFavorito(id,val){ if(guardMutation()){ renderActive(); return; }
-  const p=byId2(id); if(!p) return; p.favorito=val; persist(p);
+  const p=byId2(id); if(!p) return; p.favorito=val; favoritoMudou(p); persist(p);
   if(activeTab==="prioritarios") renderActive(); }
 function deleteFromTable(id){ if(guardMutation()) return;
   const p=byId2(id); if(!p) return;
@@ -8475,7 +8557,7 @@ function nextIdProjeto(){
     if(m){ const n=parseInt(m[1],10); if(n>max) max=n; } });
   return "PPP-"+String(max+1).padStart(3,"0");
 }
-function blankProject(){ const p={id:uid()}; ALL_KEYS.forEach(k=>p[k]=(FIELD_BY_KEY[k].t==="bool")?false:""); p.idProjeto=nextIdProjeto(); return p; }
+function blankProject(){ const p={id:uid()}; ALL_KEYS.forEach(k=>p[k]=(FIELD_BY_KEY[k].t==="bool")?false:""); p.idProjeto=nextIdProjeto(); p.etapaAstra="Radar"; return p; }
 function openModal(id){
   editingId=id||null;
   const p = id? Object.assign({},byId2(id)) : blankProject();
@@ -8562,7 +8644,14 @@ function goToFieldTab(key){
 function saveProject(){
   if(guardMutation()) return;
   const p=readForm();
-  { const orig=editingId? byId2(editingId):null; syncEquity(p, orig? orig.capex : undefined); }
+  { const orig=editingId? byId2(editingId):null; syncEquity(p, orig? orig.capex : undefined);
+    // Funil ASTRA: etapa e estrela andam juntas; saída (No Go / Perdido) exige motivo
+    if(!p.etapaAstra) p.etapaAstra=orig? etapaOf(orig) : "Radar";
+    if(ETAPAS_SAIDA.includes(p.etapaAstra) && !String(p.motivoEncerramento||"").trim()){
+      goToFieldTab("motivoEncerramento"); toast('Informe o motivo do "'+p.etapaAstra+'".'); return; }
+    if(orig && p.etapaAstra!==etapaOf(orig)) setEtapa(p,p.etapaAstra,p.motivoEncerramento);
+    else if(orig && !!p.favorito!==!!orig.favorito) favoritoMudou(p);
+    else if(!orig){ if(p.etapaAstra!=="Radar") p.etapaData=hojeISO(); favoritoMudou(p); } }
   if(!p.nome || !p.nome.trim()){ goToFieldTab("nome"); toast("O nome do projeto é obrigatório."); return; }
   const i=DB.projetos.findIndex(x=>x.id===p.id);
   if(i>=0){ DB.projetos[i]=p; persist(p); closeModal(); renderAll(); toast("Projeto atualizado com sucesso."); return; }
@@ -8639,6 +8728,7 @@ function resumoFiltros(){
   if(FILTERS.estruturador) parts.push("Estruturador: "+FILTERS.estruturador);
   if(FILTERS.anoEdital) parts.push("Edital em: "+FILTERS.anoEdital+(FILTERS.triEdital?" · "+FILTERS.triEdital:""));
   if(FILTERS.fase.length) parts.push("Fase: "+FILTERS.fase.join(", "));
+  if(FILTERS.etapa) parts.push("Etapa ASTRA: "+FILTERS.etapa);
   if(FILTERS.favorito==="1") parts.push("Só favoritos ★");
   return parts.length? "Filtros: "+parts.join(" · ") : "Base completa (sem filtros)";
 }
@@ -8659,6 +8749,14 @@ function reportHTML(rows,titulo,opts){
   const semFase=rows.filter(p=>!p.fase);
   const tblFase=tbl([["Fase"],["Projetos",1],["CAPEX (R$)",1],["Equity (R$)",1],["Valor Contrato (R$)",1]],
     fases.map(f=>linhaFase(f,rows.filter(p=>p.fase===f))).join("")+(semFase.length?linhaFase("(sem fase)",semFase):""));
+
+  // Funil ASTRA por etapa + saídas com motivo
+  const etapaLinhas=ETAPAS.map(e=>{ const g=rows.filter(p=>etapaOf(p)===e);
+    return `<tr><td>${esc(e)}</td><td class="num">${g.length}</td><td class="num">${fmtInt.format(sum(g,"numUnidades"))}</td><td class="num">${fmtM(sum(g,"capex"))}</td><td class="num">${fmtM(sumEquity(g))}</td></tr>`; }).join("");
+  const tblEtapa=tbl([["Etapa"],["Projetos",1],["Unidades",1],["CAPEX (R$)",1],["Equity (R$)",1]],etapaLinhas);
+  const saidas=rows.filter(p=>ETAPAS_SAIDA.includes(etapaOf(p)));
+  const tblSaidas=saidas.length? tbl([["ID"],["Projeto"],["Etapa"],["Motivo"]],
+    saidas.map(p=>`<tr><td>${esc(p.idProjeto)}</td><td>${esc(p.nome)}</td><td>${esc(etapaOf(p))}</td><td>${esc(p.motivoEncerramento||"")}</td></tr>`).join("")) : "";
 
   // Distribuição por UF (ordenada por CAPEX)
   const ufs=[...new Set(rows.map(p=>p.uf).filter(Boolean))]
@@ -8744,6 +8842,8 @@ function reportHTML(rows,titulo,opts){
       ${kpi("Vagas",fmtInt.format(vagas),"Vagas previstas")}
       ${kpi("Favoritos ★",fmtInt.format(favs),"Acompanhados pela ASTRA")}
     </div>
+    <div class="rep-block"><h3 class="rep-sec">Funil ASTRA</h3>${tblEtapa}</div>
+    ${tblSaidas?`<div class="rep-block"><h3 class="rep-sec">No Go e perdidos — motivos</h3>${tblSaidas}</div>`:""}
     <div class="rep-block"><h3 class="rep-sec">Funil por fase</h3>${tblFase}</div>
     <div class="rep-block"><h3 class="rep-sec">Por tipo de escopo</h3>${tblEsc}</div>
     <div class="rep-block"><h3 class="rep-sec">Por estruturador</h3>${tblEstr}</div>
@@ -8764,7 +8864,7 @@ function updateReportCounts(){
   const f=applyFilters();
   const set=(id,v)=>{const e=byId(id); if(e)e.textContent=v;};
   set("cnt-rep",f.length); set("cnt-rep-all",DB.projetos.length);
-  set("cnt-rep-fav",f.filter(p=>p.favorito).length); set("cnt-rep-inv",f.length);
+  set("cnt-rep-fav",f.filter(emFunil).length); set("cnt-rep-inv",f.length);
 }
 
 /* ---------- Util ---------- */
@@ -8775,7 +8875,9 @@ function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg
 
 /* ---------- Edição direta na grade ---------- */
 let CE_DIRTY=false, CE_ACTIVE=null;
+function etapaTag(e){ const cls=ETAPAS_SAIDA.includes(e)?"term":(e==="Ganho"?"contr":"fase"); return `<span class="tag ${cls}">${esc(e)}</span>`; }
 function ceDisplay(k,p){
+  if(k==="etapaAstra") return etapaTag(etapaOf(p));
   if(k==="fase"){ const term=FASES_TERM.includes(p.fase);
     return p.fase?`<span class="tag ${term?"term":(p.fase==="Contrato Iniciado"?"contr":"fase")}">${esc(p.fase)}</span>`:""; }
   if(MONEY_GRID.has(k)){ const n=num(p[k]); return isFinite(n)?fmt(n):""; }
@@ -8785,7 +8887,7 @@ function ceDisplay(k,p){
 function startCellEdit(td){
   if(READ_ONLY || td.querySelector("input,select")) return;
   const id=td.dataset.ce, k=td.dataset.ck, p=byId2(id); if(!p) return;
-  const f=FIELD_BY_KEY[k]; const old=p[k]??"";
+  const f=FIELD_BY_KEY[k]; const old=(k==="etapaAstra")? etapaOf(p) : (p[k]??"");
   let el;
   if(f.t==="select"){ const opts=(old && !f.opts.includes(old))? f.opts.concat([old]) : f.opts;
     el=document.createElement("select");
@@ -8800,7 +8902,13 @@ function startCellEdit(td){
   const finish=async(save,goNext)=>{
     if(done) return; done=true;
     const nv=el.value; let changed=false;
-    if(save && String(nv)!==String(f.t==="select"?old:init)){
+    if(save && k==="etapaAstra" && String(nv)!==String(old) && nv!==""){
+      let motivo;
+      if(ETAPAS_SAIDA.includes(nv)){ motivo=prompt('Motivo do "'+nv+'" (obrigatório):', p.motivoEncerramento||"");
+        if(motivo===null || !String(motivo).trim()){ toast("Etapa não alterada: informe o motivo."); motivo=null; } }
+      if(motivo!==null){ setEtapa(p,nv,motivo?String(motivo).trim():undefined); changed=true; }
+    }
+    else if(save && String(nv)!==String(f.t==="select"?old:init)){
       let val=nv;
       if(MONEY_GRID.has(k)||k==="equity"){ const mi=reaisToMi(nv); if(isFinite(mi)) val=String(mi); }   // aceita 209 · 0,850 · 850 mil · 5,3 bi
       p[k]=val; changed=true;
@@ -8866,7 +8974,7 @@ function batchValue(){
   return {f,val};
 }
 function batchChanges(){
-  const {f,val}=batchValue(); const onlyEmpty=document.getElementById("batch-only-empty").checked;
+  const {f,val}=batchValue(); const onlyEmpty=document.getElementById("batch-only-empty").checked && f.k!=="etapaAstra";
   const rows=batchTargets(); const empty=v=>v===""||v==null;
   const same=rows.filter(p=>String(p[f.k]??"")===String(val));
   const blocked=onlyEmpty? rows.filter(p=>!empty(p[f.k]) && String(p[f.k])!==String(val)) : [];
@@ -8885,6 +8993,13 @@ async function applyBatch(){
   if(guardMutation()) return;
   const {f,val,todo}=batchChanges(); if(!todo.length) return;
   if(!confirm(`Gravar "${f.l}" = ${val===true?"Sim":(val===false?"Não":val)} em ${todo.length} projetos?`)) return;
+  if(f.k==="etapaAstra"){
+    let motivo;
+    if(ETAPAS_SAIDA.includes(val)){ motivo=prompt('Motivo do "'+val+'" para '+todo.length+' projetos (obrigatório):',"");
+      if(motivo===null || !String(motivo).trim()){ toast("Nada alterado: informe o motivo."); return; } motivo=String(motivo).trim(); }
+    closeBatch(); todo.forEach(p=>setEtapa(p,val,motivo));
+    await persist(todo); renderAll(); toast(todo.length+" projetos movidos para "+val+"."); return;
+  }
   todo.forEach(p=>{ const oc=p.capex; p[f.k]=val; if(f.k==="capex"||f.k==="equity") syncEquity(p, f.k==="capex"? oc : undefined); syncContrap(p,f.k); });
   closeBatch();
   await persist(todo);
@@ -9010,7 +9125,7 @@ function renderActive(){ const rows=applyFilters();
   renderChips();
   renderTopKpis(rows);
   if(activeTab==="dashboard") renderDashboard(rows,"");
-  else if(activeTab==="prioritarios"){ const pr=rows.filter(p=>p.favorito); renderDashboard(pr,"prio"); renderTable(pr,"prio"); }
+  else if(activeTab==="prioritarios"){ const pr=rows.filter(emFunil); renderDashboard(pr,"prio"); renderTable(pr,"prio"); }
   else if(activeTab==="projetos") renderTable(rows,"");
   else if(activeTab==="exportar") updateExportCounts();
   else if(activeTab==="relatorios") updateReportCounts();
@@ -9055,7 +9170,7 @@ function wire(){
   // Paginação + PDF/CSV das 4 tabelas (sufixos: "" Projetos, prio Favoritos, lic Licitações, cont Contratos)
   const TABLE_DEFS=[
     {sfx:"",     pdf:"btn-pdf-filtrados",     csv:"btn-csv-quick",     rows:()=>applyFilters()},
-    {sfx:"prio", pdf:"btn-pdf-filtradosprio", csv:"btn-csv-quickprio", rows:()=>applyFilters().filter(p=>p.favorito)},
+    {sfx:"prio", pdf:"btn-pdf-filtradosprio", csv:"btn-csv-quickprio", rows:()=>applyFilters().filter(emFunil)},
   ];
   TABLE_DEFS.forEach(d=>{
     byId("page-size"+d.sfx).onchange=e=>{ const s=pg(d.sfx); s.size=parseInt(e.target.value,10)||20; s.page=1; renderTable(d.rows(),d.sfx); };
@@ -9070,7 +9185,7 @@ function wire(){
   document.getElementById("exp-pdf-all").onclick=()=>printFichas(DB.projetos);
   document.getElementById("rep-exec").onclick=()=>printReport(applyFilters(),"Relatório Executivo");
   document.getElementById("rep-exec-all").onclick=()=>printReport(DB.projetos,"Relatório Executivo",{resumo:"Base completa (ignora filtros)"});
-  document.getElementById("rep-fav").onclick=()=>printReport(applyFilters().filter(p=>p.favorito),"Relatório Executivo — Favoritos ★",{resumo:resumoFiltros()+" · recorte: favoritos ★",inventario:true,editais:true});
+  document.getElementById("rep-fav").onclick=()=>printReport(applyFilters().filter(emFunil),"Relatório Executivo — Funil ASTRA",{resumo:resumoFiltros()+" · recorte: projetos do funil ASTRA (de Favorito em diante)",inventario:true,editais:true});
   document.getElementById("rep-inv").onclick=()=>printReport(applyFilters(),"Relatório Executivo + Inventário",{inventario:true});
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeModal(); closeImport(); closeDups(); } });
   const swc=document.getElementById("save-warning-connect"); if(swc) swc.onclick=connectCloud;
